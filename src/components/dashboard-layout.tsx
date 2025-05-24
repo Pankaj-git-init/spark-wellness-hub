@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -27,6 +28,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
   
   const menuItems = [
     { title: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
@@ -36,7 +38,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { title: "Recipes", path: "/recipes", icon: <FileText size={20} /> },
   ];
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     toast({
       title: "Logged out successfully",
     });
@@ -49,6 +52,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
+  };
+
+  // Get user display name and email
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const userEmail = user?.email || '';
+  
+  // Get user initials for avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
   
   return (
@@ -80,8 +97,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src="" alt="User" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarImage src="" alt={displayName} />
+                <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
               </Avatar>
             </Button>
             
@@ -89,8 +106,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card border">
                 <div className="py-1 rounded-md bg-card shadow-xs" onClick={() => setUserMenuOpen(false)}>
                   <div className="px-4 py-2 text-sm border-b">
-                    <div className="font-medium">John Doe</div>
-                    <div className="text-muted-foreground">john@example.com</div>
+                    <div className="font-medium">{displayName}</div>
+                    <div className="text-muted-foreground">{userEmail}</div>
                   </div>
                   <Link to="/profile-setup" className="block px-4 py-2 text-sm hover:bg-accent">
                     Edit Profile
@@ -227,10 +244,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="" alt="User" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarImage src="" alt={displayName} />
+                    <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                   </Avatar>
-                  <span className="hidden lg:inline">John Doe</span>
+                  <span className="hidden lg:inline">{displayName}</span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
                 
@@ -238,8 +255,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card border">
                     <div className="py-1 rounded-md bg-card shadow-xs" onClick={() => setUserMenuOpen(false)}>
                       <div className="px-4 py-2 text-sm border-b">
-                        <div className="font-medium">John Doe</div>
-                        <div className="text-muted-foreground">john@example.com</div>
+                        <div className="font-medium">{displayName}</div>
+                        <div className="text-muted-foreground">{userEmail}</div>
                       </div>
                       <Link to="/profile-setup" className="block px-4 py-2 text-sm hover:bg-accent">
                         Edit Profile
