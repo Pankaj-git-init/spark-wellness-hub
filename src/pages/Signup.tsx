@@ -6,14 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp } = useAuth();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,17 +32,31 @@ const Signup = () => {
     
     setIsLoading(true);
     
-    // Simulate signup - replace with Supabase Auth
-    setTimeout(() => {
-      toast({
-        title: "Account created",
-        description: "Welcome to FitAI!",
-      });
+    try {
+      const { error } = await signUp(email, password, { full_name: fullName });
       
-      // For demo, we'll navigate to profile setup
-      navigate("/profile-setup");
+      if (error) {
+        toast({
+          title: "Signup Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Account created",
+          description: "Welcome to FitAI! Please complete your profile setup.",
+        });
+        navigate("/profile-setup");
+      }
+    } catch (error) {
+      toast({
+        title: "Signup Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -67,10 +84,20 @@ const Signup = () => {
         <Card>
           <CardHeader>
             <CardTitle>Create an account</CardTitle>
-            <CardDescription>Enter your email to create a FitAI account</CardDescription>
+            <CardDescription>Enter your details to create a FitAI account</CardDescription>
           </CardHeader>
           <form onSubmit={handleSignup}>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Full Name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <Input
                   id="email"

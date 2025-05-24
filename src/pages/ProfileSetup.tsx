@@ -7,20 +7,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProfileSetup = () => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    name: "",
+    full_name: "",
     age: "",
     weight: "",
     height: "",
-    goal: "weight-loss",
-    dietPreference: "no-preference"
+    fitness_goal: "weight-loss",
+    dietary_preference: "no-preference"
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,7 +35,7 @@ const ProfileSetup = () => {
   };
 
   const handleNext = () => {
-    if (step === 1 && (!formData.name || !formData.age)) {
+    if (step === 1 && (!formData.full_name || !formData.age)) {
       toast({
         title: "Missing information",
         description: "Please fill in all fields to continue",
@@ -57,20 +60,56 @@ const ProfileSetup = () => {
     setStep(prev => prev - 1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "Please log in to complete your profile",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
-    // Simulate submission - replace with Supabase data storage
-    setTimeout(() => {
-      toast({
-        title: "Profile completed!",
-        description: "Your personalized plan is ready",
-      });
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: formData.full_name,
+          age: parseInt(formData.age),
+          weight: parseFloat(formData.weight),
+          height: parseFloat(formData.height),
+          fitness_goal: formData.fitness_goal,
+          dietary_preference: formData.dietary_preference,
+          updated_at: new Date().toISOString()
+        });
       
-      navigate("/dashboard");
+      if (error) {
+        toast({
+          title: "Profile Update Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Profile completed!",
+          description: "Your personalized plan is ready",
+        });
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      toast({
+        title: "Profile Update Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -111,14 +150,14 @@ const ProfileSetup = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">
+                    <label htmlFor="full_name" className="text-sm font-medium">
                       Full Name
                     </label>
                     <Input
-                      id="name"
-                      name="name"
+                      id="full_name"
+                      name="full_name"
                       placeholder="Enter your name"
-                      value={formData.name}
+                      value={formData.full_name}
                       onChange={handleChange}
                     />
                   </div>
@@ -163,6 +202,7 @@ const ProfileSetup = () => {
                       id="weight"
                       name="weight"
                       type="number"
+                      step="0.1"
                       placeholder="Enter your weight"
                       value={formData.weight}
                       onChange={handleChange}
@@ -176,6 +216,7 @@ const ProfileSetup = () => {
                       id="height"
                       name="height"
                       type="number"
+                      step="0.1"
                       placeholder="Enter your height"
                       value={formData.height}
                       onChange={handleChange}
@@ -208,12 +249,12 @@ const ProfileSetup = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="goal" className="text-sm font-medium">
+                    <label htmlFor="fitness_goal" className="text-sm font-medium">
                       Fitness Goal
                     </label>
                     <Select
-                      value={formData.goal}
-                      onValueChange={(value) => handleSelectChange("goal", value)}
+                      value={formData.fitness_goal}
+                      onValueChange={(value) => handleSelectChange("fitness_goal", value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select your goal" />
@@ -228,12 +269,12 @@ const ProfileSetup = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="dietPreference" className="text-sm font-medium">
+                    <label htmlFor="dietary_preference" className="text-sm font-medium">
                       Dietary Preference
                     </label>
                     <Select
-                      value={formData.dietPreference}
-                      onValueChange={(value) => handleSelectChange("dietPreference", value)}
+                      value={formData.dietary_preference}
+                      onValueChange={(value) => handleSelectChange("dietary_preference", value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select your dietary preference" />
