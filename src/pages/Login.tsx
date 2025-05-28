@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ArrowLeft } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -49,6 +50,15 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <div className="absolute top-4 left-4">
+        <Button variant="ghost" asChild>
+          <Link to="/" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Return to Home
+          </Link>
+        </Button>
+      </div>
+      
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
