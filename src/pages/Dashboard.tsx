@@ -1,20 +1,30 @@
-
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Utensils, Clock, Heart, Flame } from "lucide-react";
+import { Utensils, Clock, Heart, Flame, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { useAIPlanGeneration } from "@/hooks/useAIPlanGeneration";
+import { MealPlanDisplay } from "@/components/MealPlanDisplay";
+import { WorkoutPlanDisplay } from "@/components/WorkoutPlanDisplay";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { 
+    generatePlan, 
+    isGenerating, 
+    mealPlan, 
+    workoutPlan,
+    setMealPlan,
+    setWorkoutPlan 
+  } = useAIPlanGeneration();
 
   // Fetch user profile data
   const { data: profile, isLoading } = useQuery({
@@ -38,19 +48,22 @@ const Dashboard = () => {
     enabled: !!user?.id,
   });
 
-  const handleGenerateNewPlan = () => {
+  const handleGenerateNewPlan = async (planType?: 'meal' | 'workout') => {
     if (!profile || !profile.age || !profile.weight || !profile.height) {
       toast({
         title: "Complete Your Profile",
         description: "Please complete your profile setup to generate a personalized plan.",
       });
       navigate("/profile-setup");
+      return;
+    }
+
+    if (planType) {
+      await generatePlan(planType);
     } else {
-      toast({
-        title: "Plan Generated!",
-        description: "Your new personalized plan has been generated based on your profile.",
-      });
-      // TODO: Implement actual plan generation logic here
+      // Generate both plans
+      await generatePlan('meal');
+      await generatePlan('workout');
     }
   };
 
@@ -70,26 +83,25 @@ const Dashboard = () => {
   // Check if user has completed profile
   const hasCompleteProfile = profile && profile.age && profile.weight && profile.height && profile.fitness_goal;
 
-  // Mock data for when profile exists - in future this would come from actual user activity data
-  const todaysMeals = [
-    { id: 1, name: "Oatmeal with Berries", time: "8:00 AM", calories: 320, completed: true },
-    { id: 2, name: "Chicken Salad", time: "12:30 PM", calories: 450, completed: false },
-    { id: 3, name: "Protein Shake", time: "3:00 PM", calories: 220, completed: false },
-    { id: 4, name: "Grilled Salmon with Veggies", time: "7:00 PM", calories: 550, completed: false }
-  ];
-  
-  const todaysWorkouts = [
-    { id: 1, name: "Morning Cardio", duration: "30 mins", calories: 250, completed: true },
-    { id: 2, name: "Evening Strength Training", duration: "45 mins", calories: 320, completed: false }
-  ];
-
   return (
     <DashboardLayout>
       <div className="space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <Button onClick={handleGenerateNewPlan}>
-            {hasCompleteProfile ? "Generate New Plan" : "Complete Profile & Generate Plan"}
+          <Button 
+            onClick={() => handleGenerateNewPlan()}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating Plans...
+              </>
+            ) : hasCompleteProfile ? (
+              "Generate New Plans"
+            ) : (
+              "Complete Profile & Generate Plans"
+            )}
           </Button>
         </div>
         
@@ -119,6 +131,58 @@ const Dashboard = () => {
         ) : (
           // Show dashboard with data when profile is complete
           <div className="space-y-4 sm:space-y-6">
+            {/* Display generated plans */}
+            {(mealPlan || workoutPlan) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {mealPlan && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Utensils className="h-5 w-5" />
+                          Your Meal Plan
+                        </span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setMealPlan(null)}
+                        >
+                          Close
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-96 overflow-y-auto">
+                      <MealPlanDisplay plan={mealPlan} />
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {workoutPlan && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Clock className="h-5 w-5" />
+                          Your Workout Plan
+                        </span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setWorkoutPlan(null)}
+                        >
+                          Close
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-96 overflow-y-auto">
+                      <WorkoutPlanDisplay plan={workoutPlan} />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* Progress section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
               <Card className="col-span-full md:col-span-1">
                 <CardHeader className="pb-2">
@@ -243,9 +307,9 @@ const Dashboard = () => {
                         </svg>
                       </div>
                       <div>
-                        <p className="font-medium">Ready to Start</p>
+                        <p className="font-medium">AI-Powered Plans</p>
                         <p className="text-muted-foreground text-sm mt-1">
-                          Click "Generate New Plan" to create your first personalized workout and meal plan!
+                          Click "Generate New Plans" to create personalized workout and meal plans using AI!
                         </p>
                       </div>
                     </div>
@@ -263,19 +327,36 @@ const Dashboard = () => {
                         <Utensils className="mr-2 h-5 w-5" />
                         Today's Meals
                       </CardTitle>
-                      <CardDescription>No meals planned yet</CardDescription>
+                      <CardDescription>
+                        {mealPlan ? "AI-generated meal plan available" : "No meal plan yet"}
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pb-0">
                   <div className="text-center py-8">
                     <Utensils className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Generate your first meal plan to see daily meals here</p>
+                    <p className="text-muted-foreground">
+                      {mealPlan ? "Your personalized meal plan is ready above" : "Generate your first meal plan to see daily meals here"}
+                    </p>
                   </div>
                 </CardContent>
                 <CardFooter className="pt-4">
-                  <Button variant="outline" className="w-full" size="sm" onClick={handleGenerateNewPlan}>
-                    Generate Meal Plan
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    size="sm" 
+                    onClick={() => handleGenerateNewPlan('meal')}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      "Generate Meal Plan"
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -288,19 +369,36 @@ const Dashboard = () => {
                         <Clock className="mr-2 h-5 w-5" />
                         Today's Workouts
                       </CardTitle>
-                      <CardDescription>No workouts planned yet</CardDescription>
+                      <CardDescription>
+                        {workoutPlan ? "AI-generated workout plan available" : "No workout plan yet"}
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pb-0">
                   <div className="text-center py-8">
                     <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Generate your first workout plan to see exercises here</p>
+                    <p className="text-muted-foreground">
+                      {workoutPlan ? "Your personalized workout plan is ready above" : "Generate your first workout plan to see exercises here"}
+                    </p>
                   </div>
                 </CardContent>
                 <CardFooter className="pt-4">
-                  <Button variant="outline" className="w-full" size="sm" onClick={handleGenerateNewPlan}>
-                    Generate Workout Plan
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    size="sm" 
+                    onClick={() => handleGenerateNewPlan('workout')}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      "Generate Workout Plan"
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
