@@ -31,68 +31,12 @@ interface MealPlanData {
 const MealPlan = () => {
   const { generatePlan, isGenerating, mealPlan } = useAIPlanGeneration();
   const [selectedDay, setSelectedDay] = useState("Monday");
-  
-  // Fallback meal plan data for when no AI plan is generated yet
-  const [fallbackMealPlan, setFallbackMealPlan] = useState<MealPlanData>({
-    breakfast: [
-      {
-        id: "b1",
-        name: "Greek Yogurt Bowl",
-        time: "8:00 AM",
-        calories: 320,
-        protein: 20,
-        carbs: 35,
-        fat: 8,
-        foods: ["Greek yogurt", "Blueberries", "Granola", "Honey"],
-        completed: false
-      }
-    ],
-    lunch: [
-      {
-        id: "l1",
-        name: "Grilled Chicken Salad",
-        time: "12:30 PM",
-        calories: 450,
-        protein: 35,
-        carbs: 25,
-        fat: 22,
-        foods: ["Grilled chicken", "Mixed greens", "Cherry tomatoes", "Avocado", "Olive oil dressing"],
-        completed: false
-      }
-    ],
-    dinner: [
-      {
-        id: "d1",
-        name: "Salmon with Quinoa",
-        time: "7:00 PM",
-        calories: 520,
-        protein: 40,
-        carbs: 45,
-        fat: 18,
-        foods: ["Baked salmon", "Quinoa", "Steamed broccoli", "Lemon"],
-        completed: false
-      }
-    ],
-    snacks: [
-      {
-        id: "s1",
-        name: "Apple with Almond Butter",
-        time: "3:00 PM",
-        calories: 180,
-        protein: 6,
-        carbs: 20,
-        fat: 12,
-        foods: ["Apple", "Almond butter"],
-        completed: false
-      }
-    ]
-  });
 
   const getCurrentDayMeals = () => {
-    if (!mealPlan) return fallbackMealPlan;
+    if (!mealPlan) return null;
     
     const dayData = mealPlan.days.find(day => day.day === selectedDay);
-    if (!dayData) return fallbackMealPlan;
+    if (!dayData) return null;
 
     // Convert AI meal plan format to our component format
     return {
@@ -158,13 +102,14 @@ const MealPlan = () => {
 
   const currentMealPlan = getCurrentDayMeals();
   
-  const totalCalories = Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.calories, 0);
-  const totalProtein = Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.protein, 0);
-  const totalCarbs = Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.carbs, 0);
-  const totalFat = Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.fat, 0);
+  // Calculate totals only if meal plan exists
+  const totalCalories = currentMealPlan ? Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.calories, 0) : 0;
+  const totalProtein = currentMealPlan ? Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.protein, 0) : 0;
+  const totalCarbs = currentMealPlan ? Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.carbs, 0) : 0;
+  const totalFat = currentMealPlan ? Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.fat, 0) : 0;
 
-  // Dynamic goals based on AI plan or fallback
-  const calorieGoal = mealPlan?.dailyCalories || 1800;
+  // Dynamic goals based on AI plan
+  const calorieGoal = mealPlan?.dailyCalories || 0;
   const proteinGoal = Math.round(calorieGoal * 0.25 / 4); // 25% of calories from protein
   const carbsGoal = Math.round(calorieGoal * 0.45 / 4); // 45% of calories from carbs
   const fatGoal = Math.round(calorieGoal * 0.3 / 9); // 30% of calories from fat
@@ -175,17 +120,6 @@ const MealPlan = () => {
 
   const swapMeal = (mealType: keyof MealPlanData, mealId: string) => {
     console.log(`Swapping meal ${mealId} in ${mealType}`);
-  };
-
-  const toggleMealCompleted = (mealType: keyof MealPlanData, mealId: string) => {
-    if (mealPlan) return; // Don't allow toggling for AI-generated plans yet
-    
-    setFallbackMealPlan(prev => ({
-      ...prev,
-      [mealType]: prev[mealType].map(meal => 
-        meal.id === mealId ? { ...meal, completed: !meal.completed } : meal
-      )
-    }));
   };
 
   const renderMealCard = (meal: Meal, mealType: keyof MealPlanData) => (
@@ -201,8 +135,7 @@ const MealPlan = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => toggleMealCompleted(mealType, meal.id)}
-              className={meal.completed ? 'text-green-600' : ''}
+              className="text-green-600"
             >
               <Check className="h-4 w-4" />
             </Button>
@@ -250,6 +183,64 @@ const MealPlan = () => {
 
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+  // Show generate prompt if no meal plan exists
+  if (!mealPlan) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Meal Plan</h1>
+              <p className="text-muted-foreground">
+                Your personalized nutrition plan for optimal results
+              </p>
+            </div>
+            <Button onClick={handleGenerateNewPlan} disabled={isGenerating}>
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Utensils className="h-4 w-4 mr-2" />
+                  Generate New Plan
+                </>
+              )}
+            </Button>
+          </div>
+
+          <Card className="text-center py-16">
+            <CardContent>
+              <div className="space-y-4">
+                <Utensils className="h-16 w-16 mx-auto text-muted-foreground" />
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">No Meal Plan Generated Yet</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Generate your personalized meal plan to view your daily nutrition and meal recommendations.
+                  </p>
+                  <Button onClick={handleGenerateNewPlan} disabled={isGenerating} size="lg">
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating Meal Plan...
+                      </>
+                    ) : (
+                      <>
+                        <Utensils className="h-4 w-4 mr-2" />
+                        Generate Meal Plan
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -296,7 +287,7 @@ const MealPlan = () => {
                   <CardContent>
                     <div className="text-2xl font-bold">{totalCalories}</div>
                     <div className="text-xs text-muted-foreground mb-2">of {calorieGoal} goal</div>
-                    <Progress value={(totalCalories / calorieGoal) * 100} className="h-2" />
+                    <Progress value={calorieGoal > 0 ? (totalCalories / calorieGoal) * 100 : 0} className="h-2" />
                   </CardContent>
                 </Card>
 
@@ -307,7 +298,7 @@ const MealPlan = () => {
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-600">{totalProtein}g</div>
                     <div className="text-xs text-muted-foreground mb-2">of {proteinGoal}g goal</div>
-                    <Progress value={(totalProtein / proteinGoal) * 100} className="h-2" />
+                    <Progress value={proteinGoal > 0 ? (totalProtein / proteinGoal) * 100 : 0} className="h-2" />
                   </CardContent>
                 </Card>
 
@@ -318,7 +309,7 @@ const MealPlan = () => {
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">{totalCarbs}g</div>
                     <div className="text-xs text-muted-foreground mb-2">of {carbsGoal}g goal</div>
-                    <Progress value={(totalCarbs / carbsGoal) * 100} className="h-2" />
+                    <Progress value={carbsGoal > 0 ? (totalCarbs / carbsGoal) * 100 : 0} className="h-2" />
                   </CardContent>
                 </Card>
 
@@ -329,49 +320,51 @@ const MealPlan = () => {
                   <CardContent>
                     <div className="text-2xl font-bold text-orange-600">{totalFat}g</div>
                     <div className="text-xs text-muted-foreground mb-2">of {fatGoal}g goal</div>
-                    <Progress value={(totalFat / fatGoal) * 100} className="h-2" />
+                    <Progress value={fatGoal > 0 ? (totalFat / fatGoal) * 100 : 0} className="h-2" />
                   </CardContent>
                 </Card>
               </div>
 
               {/* Meal Sections */}
-              <div className="grid gap-6">
-                <div>
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    🌅 Breakfast
-                  </h2>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {currentMealPlan.breakfast.map(meal => renderMealCard(meal, 'breakfast'))}
+              {currentMealPlan && (
+                <div className="grid gap-6">
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      🌅 Breakfast
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {currentMealPlan.breakfast.map(meal => renderMealCard(meal, 'breakfast'))}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    ☀️ Lunch
-                  </h2>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {currentMealPlan.lunch.map(meal => renderMealCard(meal, 'lunch'))}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      ☀️ Lunch
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {currentMealPlan.lunch.map(meal => renderMealCard(meal, 'lunch'))}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    🌙 Dinner
-                  </h2>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {currentMealPlan.dinner.map(meal => renderMealCard(meal, 'dinner'))}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      🌙 Dinner
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {currentMealPlan.dinner.map(meal => renderMealCard(meal, 'dinner'))}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    🍎 Snacks
-                  </h2>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {currentMealPlan.snacks.map(meal => renderMealCard(meal, 'snacks'))}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                      🍎 Snacks
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {currentMealPlan.snacks.map(meal => renderMealCard(meal, 'snacks'))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </TabsContent>
           ))}
         </Tabs>
