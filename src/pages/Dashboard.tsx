@@ -48,25 +48,6 @@ const Dashboard = () => {
     enabled: !!user?.id,
   });
 
-  const handleGenerateNewPlan = async (planType?: 'meal' | 'workout') => {
-    if (!profile || !profile.age || !profile.weight || !profile.height) {
-      toast({
-        title: "Complete Your Profile",
-        description: "Please complete your profile setup to generate a personalized plan.",
-      });
-      navigate("/profile-setup");
-      return;
-    }
-
-    if (planType) {
-      await generatePlan(planType);
-    } else {
-      // Generate both plans
-      await generatePlan('meal');
-      await generatePlan('workout');
-    }
-  };
-
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -88,21 +69,6 @@ const Dashboard = () => {
       <div className="space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <Button 
-            onClick={() => handleGenerateNewPlan()}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Plans...
-              </>
-            ) : hasCompleteProfile ? (
-              "Generate New Plans"
-            ) : (
-              "Complete Profile & Generate Plans"
-            )}
-          </Button>
         </div>
         
         {!hasCompleteProfile ? (
@@ -337,7 +303,7 @@ const Dashboard = () => {
                   <div className="text-center py-8">
                     <Utensils className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">
-                      {mealPlan ? "Your personalized meal plan is ready above" : "Generate your first meal plan to see daily meals here"}
+                      {mealPlan ? "Your personalized meal plan is ready above" : "Visit the meal plan page to generate your first meal plan"}
                     </p>
                   </div>
                 </CardContent>
@@ -346,17 +312,9 @@ const Dashboard = () => {
                     variant="outline" 
                     className="w-full" 
                     size="sm" 
-                    onClick={() => handleGenerateNewPlan('meal')}
-                    disabled={isGenerating}
+                    onClick={() => navigate('/meal-plan')}
                   >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      "Generate Meal Plan"
-                    )}
+                    Go to Meal Plan
                   </Button>
                 </CardFooter>
               </Card>
@@ -379,7 +337,7 @@ const Dashboard = () => {
                   <div className="text-center py-8">
                     <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">
-                      {workoutPlan ? "Your personalized workout plan is ready above" : "Generate your first workout plan to see exercises here"}
+                      {workoutPlan ? "Your personalized workout plan is ready above" : "Visit the workouts page to generate your first workout plan"}
                     </p>
                   </div>
                 </CardContent>
@@ -388,17 +346,9 @@ const Dashboard = () => {
                     variant="outline" 
                     className="w-full" 
                     size="sm" 
-                    onClick={() => handleGenerateNewPlan('workout')}
-                    disabled={isGenerating}
+                    onClick={() => navigate('/workouts')}
                   >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      "Generate Workout Plan"
-                    )}
+                    Go to Workout Plan
                   </Button>
                 </CardFooter>
               </Card>
