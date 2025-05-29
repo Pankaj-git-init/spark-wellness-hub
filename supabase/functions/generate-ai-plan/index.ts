@@ -58,6 +58,8 @@ Please provide:
 4. Make it practical and easy to follow
 5. Include variety throughout the week
 
+IMPORTANT: Respond ONLY with valid JSON. Do not include any text before or after the JSON.
+
 Format the response as JSON with this structure:
 {
   "title": "Personalized 7-Day Meal Plan",
@@ -74,7 +76,6 @@ Format the response as JSON with this structure:
         "snack2": {"name": "snack name", "calories": 000, "description": "brief description"}
       }
     }
-    // ... repeat for all 7 days
   ]
 }`;
     } else if (planType === 'workout') {
@@ -90,6 +91,8 @@ Please provide:
 3. Specify sets, reps, and duration for each exercise
 4. Consider rest days
 5. Make it progressive and achievable
+
+IMPORTANT: Respond ONLY with valid JSON. Do not include any text before or after the JSON.
 
 Format the response as JSON with this structure:
 {
@@ -113,7 +116,6 @@ Format the response as JSON with this structure:
         }
       ]
     }
-    // ... repeat for all 7 days
   ]
 }`;
     }
@@ -161,8 +163,18 @@ Format the response as JSON with this structure:
     // Clean and parse the JSON response
     let planData;
     try {
-      // Remove any markdown code block formatting
-      const cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
+      // Remove any markdown code block formatting and extra text
+      let cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
+      
+      // Find the JSON start and end
+      const jsonStart = cleanedText.indexOf('{');
+      const jsonEnd = cleanedText.lastIndexOf('}') + 1;
+      
+      if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        cleanedText = cleanedText.substring(jsonStart, jsonEnd);
+      }
+      
+      console.log('Cleaned text for parsing:', cleanedText);
       planData = JSON.parse(cleanedText);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);

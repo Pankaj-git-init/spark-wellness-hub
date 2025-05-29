@@ -1,187 +1,48 @@
-
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Clock, Utensils, Shuffle, Check, Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { useAIPlanGeneration } from "@/hooks/useAIPlanGeneration";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Utensils, Loader2 } from "lucide-react";
+import { useState } from "react";
+import {
+  MealPlan as MealPlanType,
+  useAIPlanGeneration
+} from "@/hooks/useAIPlanGeneration";
 
 interface Meal {
-  id: string;
   name: string;
-  time: string;
   calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  foods: string[];
-  completed?: boolean;
+  description: string;
 }
 
-interface MealPlanData {
-  breakfast: Meal[];
-  lunch: Meal[];
-  dinner: Meal[];
-  snacks: Meal[];
+interface DailyMeals {
+  breakfast: Meal;
+  lunch: Meal;
+  dinner: Meal;
+  snack1: Meal;
+  snack2: Meal;
+}
+
+interface DailyPlan {
+  day: string;
+  meals: DailyMeals;
+}
+
+interface MealPlan {
+  title: string;
+  overview: string;
+  dailyCalories: number;
+  days: DailyPlan[];
 }
 
 const MealPlan = () => {
   const { generatePlan, isGenerating, mealPlan } = useAIPlanGeneration();
   const [selectedDay, setSelectedDay] = useState("Monday");
-
-  const getCurrentDayMeals = () => {
-    if (!mealPlan) return null;
-    
-    const dayData = mealPlan.days.find(day => day.day === selectedDay);
-    if (!dayData) return null;
-
-    // Convert AI meal plan format to our component format
-    return {
-      breakfast: [{
-        id: `${selectedDay}-b1`,
-        name: dayData.meals.breakfast.name,
-        time: "8:00 AM",
-        calories: dayData.meals.breakfast.calories,
-        protein: Math.round(dayData.meals.breakfast.calories * 0.2 / 4), // Estimate protein
-        carbs: Math.round(dayData.meals.breakfast.calories * 0.5 / 4), // Estimate carbs
-        fat: Math.round(dayData.meals.breakfast.calories * 0.3 / 9), // Estimate fat
-        foods: dayData.meals.breakfast.description.split(', '),
-        completed: false
-      }],
-      lunch: [{
-        id: `${selectedDay}-l1`,
-        name: dayData.meals.lunch.name,
-        time: "12:30 PM",
-        calories: dayData.meals.lunch.calories,
-        protein: Math.round(dayData.meals.lunch.calories * 0.25 / 4),
-        carbs: Math.round(dayData.meals.lunch.calories * 0.45 / 4),
-        fat: Math.round(dayData.meals.lunch.calories * 0.3 / 9),
-        foods: dayData.meals.lunch.description.split(', '),
-        completed: false
-      }],
-      dinner: [{
-        id: `${selectedDay}-d1`,
-        name: dayData.meals.dinner.name,
-        time: "7:00 PM",
-        calories: dayData.meals.dinner.calories,
-        protein: Math.round(dayData.meals.dinner.calories * 0.3 / 4),
-        carbs: Math.round(dayData.meals.dinner.calories * 0.4 / 4),
-        fat: Math.round(dayData.meals.dinner.calories * 0.3 / 9),
-        foods: dayData.meals.dinner.description.split(', '),
-        completed: false
-      }],
-      snacks: [
-        {
-          id: `${selectedDay}-s1`,
-          name: dayData.meals.snack1.name,
-          time: "3:00 PM",
-          calories: dayData.meals.snack1.calories,
-          protein: Math.round(dayData.meals.snack1.calories * 0.15 / 4),
-          carbs: Math.round(dayData.meals.snack1.calories * 0.6 / 4),
-          fat: Math.round(dayData.meals.snack1.calories * 0.25 / 9),
-          foods: dayData.meals.snack1.description.split(', '),
-          completed: false
-        },
-        {
-          id: `${selectedDay}-s2`,
-          name: dayData.meals.snack2.name,
-          time: "9:00 PM",
-          calories: dayData.meals.snack2.calories,
-          protein: Math.round(dayData.meals.snack2.calories * 0.15 / 4),
-          carbs: Math.round(dayData.meals.snack2.calories * 0.6 / 4),
-          fat: Math.round(dayData.meals.snack2.calories * 0.25 / 9),
-          foods: dayData.meals.snack2.description.split(', '),
-          completed: false
-        }
-      ]
-    };
-  };
-
-  const currentMealPlan = getCurrentDayMeals();
   
-  // Calculate totals only if meal plan exists
-  const totalCalories = currentMealPlan ? Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.calories, 0) : 0;
-  const totalProtein = currentMealPlan ? Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.protein, 0) : 0;
-  const totalCarbs = currentMealPlan ? Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.carbs, 0) : 0;
-  const totalFat = currentMealPlan ? Object.values(currentMealPlan).flat().reduce((sum, meal) => sum + meal.fat, 0) : 0;
-
-  // Dynamic goals based on AI plan
-  const calorieGoal = mealPlan?.dailyCalories || 0;
-  const proteinGoal = Math.round(calorieGoal * 0.25 / 4); // 25% of calories from protein
-  const carbsGoal = Math.round(calorieGoal * 0.45 / 4); // 45% of calories from carbs
-  const fatGoal = Math.round(calorieGoal * 0.3 / 9); // 30% of calories from fat
-
   const handleGenerateNewPlan = async () => {
     await generatePlan('meal');
   };
-
-  const swapMeal = (mealType: keyof MealPlanData, mealId: string) => {
-    console.log(`Swapping meal ${mealId} in ${mealType}`);
-  };
-
-  const renderMealCard = (meal: Meal, mealType: keyof MealPlanData) => (
-    <Card key={meal.id} className={`transition-all ${meal.completed ? 'opacity-60' : ''}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{meal.name}</CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {meal.time}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-green-600"
-            >
-              <Check className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <CardDescription>
-          {meal.calories} calories
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pb-3">
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="text-center">
-            <div className="text-lg font-semibold text-blue-600">{meal.protein}g</div>
-            <div className="text-xs text-muted-foreground">Protein</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-semibold text-green-600">{meal.carbs}g</div>
-            <div className="text-xs text-muted-foreground">Carbs</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-semibold text-orange-600">{meal.fat}g</div>
-            <div className="text-xs text-muted-foreground">Fat</div>
-          </div>
-        </div>
-        <div className="space-y-1">
-          <div className="text-sm font-medium">Ingredients:</div>
-          <div className="text-sm text-muted-foreground">
-            {meal.foods.join(", ")}
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => swapMeal(mealType, meal.id)}
-          className="w-full"
-        >
-          <Shuffle className="h-4 w-4 mr-2" />
-          Swap Meal
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-
-  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   // Show generate prompt if no meal plan exists
   if (!mealPlan) {
@@ -190,10 +51,8 @@ const MealPlan = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">Meal Plan</h1>
-              <p className="text-muted-foreground">
-                Your personalized nutrition plan for optimal results
-              </p>
+              <h1 className="text-3xl font-bold tracking-tight">Meal Plan</h1>
+              <p className="text-muted-foreground">Your personalized AI meal plan based on your goals</p>
             </div>
             <Button onClick={handleGenerateNewPlan} disabled={isGenerating}>
               {isGenerating ? (
@@ -217,7 +76,7 @@ const MealPlan = () => {
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">No Meal Plan Generated Yet</h2>
                   <p className="text-muted-foreground mb-6">
-                    Generate your personalized meal plan to view your daily nutrition and meal recommendations.
+                    Generate your personalized meal plan to view your daily meal recommendation.
                   </p>
                   <Button onClick={handleGenerateNewPlan} disabled={isGenerating} size="lg">
                     {isGenerating ? (
@@ -241,15 +100,24 @@ const MealPlan = () => {
     );
   }
 
+  // Get current day data
+  const currentDayData = mealPlan.days.find(day => day.day === selectedDay);
+  
+  // Calculate nutrition for current day
+  const currentDayNutrition = currentDayData ? {
+    calories: Object.values(currentDayData.meals).reduce((sum, meal) => sum + meal.calories, 0),
+    protein: Math.round(Object.values(currentDayData.meals).reduce((sum, meal) => sum + meal.calories, 0) * 0.3 / 4), // 30% from protein
+    carbs: Math.round(Object.values(currentDayData.meals).reduce((sum, meal) => sum + meal.calories, 0) * 0.4 / 4), // 40% from carbs
+    fat: Math.round(Object.values(currentDayData.meals).reduce((sum, meal) => sum + meal.calories, 0) * 0.3 / 9), // 30% from fat
+  } : { calories: 0, protein: 0, carbs: 0, fat: 0 };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Meal Plan</h1>
-            <p className="text-muted-foreground">
-              Your personalized nutrition plan for optimal results
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight">Meal Plan</h1>
+            <p className="text-muted-foreground">{mealPlan.title}</p>
           </div>
           <Button onClick={handleGenerateNewPlan} disabled={isGenerating}>
             {isGenerating ? (
@@ -258,113 +126,99 @@ const MealPlan = () => {
                 Generating...
               </>
             ) : (
-              <>
-                <Utensils className="h-4 w-4 mr-2" />
-                Generate New Plan
-              </>
+              "Regenerate Plan"
             )}
           </Button>
         </div>
 
-        {/* Day Navigation */}
+        {/* Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Plan Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{mealPlan.overview}</p>
+            <Badge variant="secondary" className="mt-2">
+              Daily Target: {mealPlan.dailyCalories} calories
+            </Badge>
+          </CardContent>
+        </Card>
+
+        {/* Day Selection Tabs */}
         <Tabs value={selectedDay} onValueChange={setSelectedDay}>
           <TabsList className="grid w-full grid-cols-7">
-            {daysOfWeek.map((day) => (
-              <TabsTrigger key={day} value={day} className="text-xs">
-                {day.slice(0, 3)}
+            {mealPlan.days.map((day) => (
+              <TabsTrigger key={day.day} value={day.day} className="text-xs">
+                {day.day.slice(0, 3)}
               </TabsTrigger>
             ))}
           </TabsList>
-
-          {daysOfWeek.map((day) => (
-            <TabsContent key={day} value={day} className="space-y-6">
-              {/* Daily Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {mealPlan.days.map((day) => (
+            <TabsContent key={day.day} value={day.day} className="space-y-6">
+              {/* Nutrition Summary for Selected Day */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card>
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">Calories</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{totalCalories}</div>
-                    <div className="text-xs text-muted-foreground mb-2">of {calorieGoal} goal</div>
-                    <Progress value={calorieGoal > 0 ? (totalCalories / calorieGoal) * 100 : 0} className="h-2" />
+                    <div className="text-2xl font-bold text-orange-600">{currentDayNutrition.calories}</div>
+                    <p className="text-xs text-muted-foreground">kcal</p>
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-blue-600">Protein</CardTitle>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Protein</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">{totalProtein}g</div>
-                    <div className="text-xs text-muted-foreground mb-2">of {proteinGoal}g goal</div>
-                    <Progress value={proteinGoal > 0 ? (totalProtein / proteinGoal) * 100 : 0} className="h-2" />
+                    <div className="text-2xl font-bold text-blue-600">{currentDayNutrition.protein}g</div>
+                    <p className="text-xs text-muted-foreground">30% of calories</p>
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-green-600">Carbs</CardTitle>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Carbs</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{totalCarbs}g</div>
-                    <div className="text-xs text-muted-foreground mb-2">of {carbsGoal}g goal</div>
-                    <Progress value={carbsGoal > 0 ? (totalCarbs / carbsGoal) * 100 : 0} className="h-2" />
+                    <div className="text-2xl font-bold text-green-600">{currentDayNutrition.carbs}g</div>
+                    <p className="text-xs text-muted-foreground">40% of calories</p>
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-orange-600">Fat</CardTitle>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Fat</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-orange-600">{totalFat}g</div>
-                    <div className="text-xs text-muted-foreground mb-2">of {fatGoal}g goal</div>
-                    <Progress value={fatGoal > 0 ? (totalFat / fatGoal) * 100 : 0} className="h-2" />
+                    <div className="text-2xl font-bold text-purple-600">{currentDayNutrition.fat}g</div>
+                    <p className="text-xs text-muted-foreground">30% of calories</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Meal Sections */}
-              {currentMealPlan && (
-                <div className="grid gap-6">
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                      🌅 Breakfast
-                    </h2>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {currentMealPlan.breakfast.map(meal => renderMealCard(meal, 'breakfast'))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                      ☀️ Lunch
-                    </h2>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {currentMealPlan.lunch.map(meal => renderMealCard(meal, 'lunch'))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                      🌙 Dinner
-                    </h2>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {currentMealPlan.dinner.map(meal => renderMealCard(meal, 'dinner'))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                      🍎 Snacks
-                    </h2>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {currentMealPlan.snacks.map(meal => renderMealCard(meal, 'snacks'))}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Meals for Selected Day */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.entries(day.meals).map(([mealType, meal]) => (
+                  <Card key={mealType}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 capitalize">
+                        <Utensils className="h-5 w-5" />
+                        {mealType.replace(/\d+/, ' ')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <h4 className="font-semibold">{meal.name}</h4>
+                        <p className="text-sm text-muted-foreground">{meal.description}</p>
+                      </div>
+                      <Badge variant="secondary">{meal.calories} calories</Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </TabsContent>
           ))}
         </Tabs>
