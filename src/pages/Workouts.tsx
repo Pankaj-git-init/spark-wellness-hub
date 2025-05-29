@@ -1,13 +1,13 @@
-
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { X, Clock } from "lucide-react";
+import { X, Clock, Dumbbell, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { useAIPlanGeneration } from "@/hooks/useAIPlanGeneration";
 
 interface Exercise {
   id: number;
@@ -39,8 +39,9 @@ interface WorkoutDay {
 
 const Workouts = () => {
   const { toast } = useToast();
+  const { generatePlan, isGenerating, workoutPlan } = useAIPlanGeneration();
   
-  // Mock workout plan data
+  // Mock workout plan data - only used if AI plan is not available
   const initialWorkoutPlan: WorkoutDay[] = [
     {
       day: "Monday",
@@ -474,7 +475,11 @@ const Workouts = () => {
     }
   ];
   
-  const [workoutPlan, setWorkoutPlan] = useState<WorkoutDay[]>(initialWorkoutPlan);
+  const [workoutPlan2, setWorkoutPlan] = useState<WorkoutDay[]>(initialWorkoutPlan);
+  
+  const handleGenerateNewPlan = async () => {
+    await generatePlan('workout');
+  };
   
   const handleRegenerateWorkout = (dayIndex: number, workoutIndex: number) => {
     toast({
@@ -484,7 +489,7 @@ const Workouts = () => {
     
     // This would call an AI service in a real app
     // For now, let's just simulate a change by adding "New" to the workout name
-    const updatedWorkoutPlan = [...workoutPlan];
+    const updatedWorkoutPlan = [...workoutPlan2];
     updatedWorkoutPlan[dayIndex].workouts[workoutIndex] = {
       ...updatedWorkoutPlan[dayIndex].workouts[workoutIndex],
       name: "New " + updatedWorkoutPlan[dayIndex].workouts[workoutIndex].name
@@ -494,7 +499,7 @@ const Workouts = () => {
   };
   
   const handleMarkWorkoutCompleted = (dayIndex: number, workoutIndex: number) => {
-    const updatedWorkoutPlan = [...workoutPlan];
+    const updatedWorkoutPlan = [...workoutPlan2];
     updatedWorkoutPlan[dayIndex].workouts[workoutIndex].completed = !updatedWorkoutPlan[dayIndex].workouts[workoutIndex].completed;
     
     // If workout is marked as completed, mark all exercises as completed too
@@ -517,7 +522,7 @@ const Workouts = () => {
   };
   
   const handleMarkExerciseCompleted = (dayIndex: number, workoutIndex: number, exerciseIndex: number) => {
-    const updatedWorkoutPlan = [...workoutPlan];
+    const updatedWorkoutPlan = [...workoutPlan2];
     updatedWorkoutPlan[dayIndex].workouts[workoutIndex].exercises[exerciseIndex].completed = 
       !updatedWorkoutPlan[dayIndex].workouts[workoutIndex].exercises[exerciseIndex].completed;
     
@@ -555,6 +560,62 @@ const Workouts = () => {
     return totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
   };
 
+  // Show generate prompt if no workout plan exists
+  if (!workoutPlan) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Workout Plan</h1>
+              <p className="text-muted-foreground">Your personalized AI workout plan based on your goals</p>
+            </div>
+            <Button onClick={handleGenerateNewPlan} disabled={isGenerating}>
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Dumbbell className="h-4 w-4 mr-2" />
+                  Generate New Plan
+                </>
+              )}
+            </Button>
+          </div>
+
+          <Card className="text-center py-16">
+            <CardContent>
+              <div className="space-y-4">
+                <Dumbbell className="h-16 w-16 mx-auto text-muted-foreground" />
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">No Workout Plan Generated Yet</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Generate your personalized workout plan to view your daily workout recommendation.
+                  </p>
+                  <Button onClick={handleGenerateNewPlan} disabled={isGenerating} size="lg">
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating Workout Plan...
+                      </>
+                    ) : (
+                      <>
+                        <Dumbbell className="h-4 w-4 mr-2" />
+                        Generate Workout Plan
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -563,222 +624,90 @@ const Workouts = () => {
             <h1 className="text-3xl font-bold tracking-tight">Workout Plan</h1>
             <p className="text-muted-foreground">Your personalized AI workout plan based on your goals</p>
           </div>
-          <Button onClick={() => {
-            toast({
-              title: "Regenerating workout plan",
-              description: "Your complete AI workout plan is being updated",
-            });
-          }}>
-            Regenerate Plan
+          <Button onClick={handleGenerateNewPlan} disabled={isGenerating}>
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              "Regenerate Plan"
+            )}
           </Button>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Weekly Workout Summary</CardTitle>
-            <CardDescription>Overview of your weekly workout plan</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="text-muted-foreground text-sm">Weekly Workouts</div>
-                  <div className="text-2xl font-bold mt-1">
-                    {workoutPlan.reduce((acc, day) => acc + day.workouts.length, 0)}
-                  </div>
-                </div>
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="text-muted-foreground text-sm">Total Duration</div>
-                  <div className="text-2xl font-bold mt-1">
-                    {workoutPlan.reduce((acc, day) => acc + day.totalDuration, 0)} mins
-                  </div>
-                </div>
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="text-muted-foreground text-sm">Total Calories Burn</div>
-                  <div className="text-2xl font-bold mt-1">
-                    {workoutPlan.reduce((acc, day) => acc + day.totalCaloriesBurn, 0)}
-                  </div>
-                </div>
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="text-muted-foreground text-sm">Completion Rate</div>
-                  <div className="text-2xl font-bold mt-1">
-                    {Math.round(workoutPlan.reduce((acc, day) => 
-                      acc + day.workouts.filter(workout => workout.completed).length, 0) / 
-                      workoutPlan.reduce((acc, day) => acc + day.workouts.length, 0) * 100) || 0}%
-                  </div>
-                </div>
-              </div>
+        {/* Display AI-generated workout plan using WorkoutPlanDisplay component */}
+        {workoutPlan && (
+          <div className="space-y-4">
+            {/* You can integrate the WorkoutPlanDisplay component here if needed */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{workoutPlan.title}</CardTitle>
+                <CardDescription>{workoutPlan.overview}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Badge variant="secondary">{workoutPlan.weeklyGoal}</Badge>
+              </CardContent>
+            </Card>
 
-              <div className="pt-2">
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Workout Type Distribution</span>
-                </div>
-                <div className="h-3 w-full overflow-hidden rounded-full bg-muted flex">
-                  {/* Count workouts by type */}
-                  {(() => {
-                    const allWorkouts = workoutPlan.flatMap(day => day.workouts);
-                    const totalWorkouts = allWorkouts.length;
-                    
-                    const typeCount = {
-                      strength: allWorkouts.filter(w => w.type === 'strength').length,
-                      cardio: allWorkouts.filter(w => w.type === 'cardio').length,
-                      hiit: allWorkouts.filter(w => w.type === 'hiit').length,
-                      yoga: allWorkouts.filter(w => w.type === 'yoga').length,
-                    };
-                    
-                    return (
-                      <>
-                        <div 
-                          className="h-full bg-blue-500" 
-                          style={{ width: `${(typeCount.strength / totalWorkouts) * 100}%` }} 
-                        />
-                        <div 
-                          className="h-full bg-red-500" 
-                          style={{ width: `${(typeCount.cardio / totalWorkouts) * 100}%` }} 
-                        />
-                        <div 
-                          className="h-full bg-orange-500" 
-                          style={{ width: `${(typeCount.hiit / totalWorkouts) * 100}%` }} 
-                        />
-                        <div 
-                          className="h-full bg-green-500" 
-                          style={{ width: `${(typeCount.yoga / totalWorkouts) * 100}%` }} 
-                        />
-                      </>
-                    );
-                  })()}
-                </div>
-                <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mt-2">
-                  <div className="flex items-center">
-                    <div className="h-3 w-3 rounded-full bg-blue-500 mr-1" />
-                    <span>Strength</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="h-3 w-3 rounded-full bg-red-500 mr-1" />
-                    <span>Cardio</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="h-3 w-3 rounded-full bg-orange-500 mr-1" />
-                    <span>HIIT</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="h-3 w-3 rounded-full bg-green-500 mr-1" />
-                    <span>Yoga</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Tabs defaultValue="Monday">
-          <TabsList className="mb-4 w-full max-w-full overflow-x-auto flex flex-nowrap">
-            {workoutPlan.map((day) => (
-              <TabsTrigger key={day.day} value={day.day} className="flex-shrink-0">
-                {day.day}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          
-          {workoutPlan.map((day, dayIndex) => (
-            <TabsContent key={day.day} value={day.day} className="space-y-4 relative">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-semibold">{day.day}</h2>
-                <div className="text-sm flex items-center gap-2 text-muted-foreground">
-                  <span>{day.totalDuration} mins</span>
-                  <span>·</span>
-                  <span>{day.totalCaloriesBurn} calories</span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {day.workouts.map((workout, workoutIndex) => (
-                  <Card key={workout.id} className={workout.completed ? "opacity-75 border-green-500/50" : ""}>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className={`text-lg ${workout.completed ? "line-through" : ""}`}>{workout.name}</CardTitle>
-                          <CardDescription>
-                            {workout.duration} mins · {workout.caloriesBurn} calories
-                          </CardDescription>
-                        </div>
-                        <Badge className={getWorkoutTypeColor(workout.type)}>
-                          {workout.type.charAt(0).toUpperCase() + workout.type.slice(1)}
-                        </Badge>
-                      </div>
-                      
-                      <Progress 
-                        value={getWorkoutCompletion(workout.exercises)} 
-                        className="h-1 mt-2" 
-                      />
-                    </CardHeader>
-                    <CardContent className="pb-0">
-                      <div className="space-y-3">
-                        {workout.exercises.map((exercise, exerciseIndex) => (
-                          <div 
-                            key={exercise.id} 
-                            className={`p-3 rounded-md border ${exercise.completed ? "bg-muted/30" : ""}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className={`font-medium ${exercise.completed ? "line-through opacity-70" : ""}`}>
-                                  {exercise.name}
-                                </p>
-                                <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-                                  <span>{exercise.sets} sets</span>
-                                  <span>·</span>
-                                  <span>
-                                    {exercise.reps} {exercise.reps > 1 ? "reps" : "rep"}
-                                    {exercise.duration ? ` (${exercise.duration} sec)` : ""}
-                                  </span>
-                                  {exercise.weight && (
-                                    <>
-                                      <span>·</span>
-                                      <span>{exercise.weight} kg</span>
-                                    </>
-                                  )}
-                                  <span>·</span>
-                                  <span>{exercise.restTime} sec rest</span>
-                                </div>
-                              </div>
-                              <div>
-                                <Button 
-                                  variant={exercise.completed ? "outline" : "default"} 
-                                  size="sm"
-                                  onClick={() => handleMarkExerciseCompleted(dayIndex, workoutIndex, exerciseIndex)}
-                                >
-                                  {exercise.completed ? "Completed" : "Done"}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                    <CardFooter className="pt-4 flex justify-between">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleRegenerateWorkout(dayIndex, workoutIndex)}
-                      >
-                        <X className="mr-1 h-4 w-4" /> Swap Workout
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant={workout.completed ? "outline" : "default"}
-                        onClick={() => handleMarkWorkoutCompleted(dayIndex, workoutIndex)}
-                        className={workout.completed ? "border-green-500 text-green-500 hover:bg-green-500/10" : ""}
-                      >
-                        <Clock className="mr-1 h-4 w-4" />
-                        {workout.completed ? "Completed" : "Complete All"}
-                      </Button>
-                    </CardFooter>
-                  </Card>
+            <Tabs defaultValue="Monday">
+              <TabsList className="mb-4 w-full max-w-full overflow-x-auto flex flex-nowrap">
+                {workoutPlan.days.map((day) => (
+                  <TabsTrigger key={day.day} value={day.day} className="flex-shrink-0">
+                    {day.day}
+                  </TabsTrigger>
                 ))}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+              </TabsList>
+              
+              {workoutPlan.days.map((day, dayIndex) => (
+                <TabsContent key={day.day} value={day.day} className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-semibold">{day.day}</h2>
+                    <div className="text-sm flex items-center gap-2 text-muted-foreground">
+                      <span>{day.duration}</span>
+                      <span>·</span>
+                      <span>{day.focus}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {day.exercises && day.exercises.length > 0 ? (
+                      day.exercises.map((exercise, exerciseIndex) => (
+                        <Card key={exerciseIndex}>
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-1">
+                                <CardTitle className="text-lg">{exercise.name}</CardTitle>
+                                <CardDescription>{exercise.description}</CardDescription>
+                              </div>
+                              <Badge variant="outline" className="capitalize">
+                                {exercise.type}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex gap-4 text-sm text-muted-foreground">
+                              {exercise.sets && <span>{exercise.sets} sets</span>}
+                              {exercise.reps && <span>{exercise.reps} reps</span>}
+                              {exercise.duration && <span>{exercise.duration}</span>}
+                              {exercise.rest && <span>Rest: {exercise.rest}</span>}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <Card className="col-span-full">
+                        <CardContent className="text-center py-8">
+                          <p className="text-muted-foreground">Rest Day - Focus on recovery and light stretching</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
