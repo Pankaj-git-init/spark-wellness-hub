@@ -70,7 +70,7 @@ const Index = () => {
             <div className="relative">
               <div className="rounded-xl overflow-hidden shadow-2xl border">
                 <img 
-                  src="https://images.unsplash.com/photo-1546483875-ad9014c88eba?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
+                  src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
                   alt="Dashboard Preview" 
                   className="w-full h-auto"
                 />
