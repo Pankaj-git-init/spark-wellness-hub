@@ -72,7 +72,7 @@ export const useAIPlanGeneration = () => {
           console.error('Error loading meal plan:', mealError);
         } else if (mealPlanData) {
           console.log('Loaded meal plan:', mealPlanData);
-          setMealPlan(mealPlanData.plan_data as MealPlan);
+          setMealPlan(mealPlanData.plan_data as unknown as MealPlan);
         }
 
         // Load workout plan
@@ -88,7 +88,7 @@ export const useAIPlanGeneration = () => {
           console.error('Error loading workout plan:', workoutError);
         } else if (workoutPlanData) {
           console.log('Loaded workout plan:', workoutPlanData);
-          setWorkoutPlan(workoutPlanData.plan_data as WorkoutPlan);
+          setWorkoutPlan(workoutPlanData.plan_data as unknown as WorkoutPlan);
         }
 
       } catch (error) {
