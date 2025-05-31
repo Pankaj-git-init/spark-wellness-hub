@@ -116,26 +116,44 @@ export const useAIPlanGeneration = () => {
       console.log('Saving meal plan to database for user:', user.id);
       console.log('Plan data:', plan);
 
-      const { data, error } = await supabase
+      // First, try to update existing plan
+      const { data: updateData, error: updateError } = await supabase
         .from('meal_plans')
-        .upsert({
-          user_id: user.id,
+        .update({
           title: plan.title,
           overview: plan.overview,
           daily_calories: plan.dailyCalories,
           plan_data: plan as any,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
         })
+        .eq('user_id', user.id)
         .select();
 
-      if (error) {
-        console.error('Error saving meal plan:', error);
-        throw error;
+      if (updateError) {
+        console.log('Update failed, trying insert:', updateError);
+        
+        // If update fails, try insert
+        const { data: insertData, error: insertError } = await supabase
+          .from('meal_plans')
+          .insert({
+            user_id: user.id,
+            title: plan.title,
+            overview: plan.overview,
+            daily_calories: plan.dailyCalories,
+            plan_data: plan as any
+          })
+          .select();
+
+        if (insertError) {
+          console.error('Insert also failed:', insertError);
+          throw insertError;
+        }
+
+        console.log('Meal plan inserted successfully:', insertData);
+        return true;
       }
 
-      console.log('Meal plan saved successfully:', data);
+      console.log('Meal plan updated successfully:', updateData);
       return true;
     } catch (error) {
       console.error('Failed to save meal plan:', error);
@@ -158,26 +176,44 @@ export const useAIPlanGeneration = () => {
       console.log('Saving workout plan to database for user:', user.id);
       console.log('Plan data:', plan);
 
-      const { data, error } = await supabase
+      // First, try to update existing plan
+      const { data: updateData, error: updateError } = await supabase
         .from('workout_plans')
-        .upsert({
-          user_id: user.id,
+        .update({
           title: plan.title,
           overview: plan.overview,
           weekly_goal: plan.weeklyGoal,
           plan_data: plan as any,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
         })
+        .eq('user_id', user.id)
         .select();
 
-      if (error) {
-        console.error('Error saving workout plan:', error);
-        throw error;
+      if (updateError) {
+        console.log('Update failed, trying insert:', updateError);
+        
+        // If update fails, try insert
+        const { data: insertData, error: insertError } = await supabase
+          .from('workout_plans')
+          .insert({
+            user_id: user.id,
+            title: plan.title,
+            overview: plan.overview,
+            weekly_goal: plan.weeklyGoal,
+            plan_data: plan as any
+          })
+          .select();
+
+        if (insertError) {
+          console.error('Insert also failed:', insertError);
+          throw insertError;
+        }
+
+        console.log('Workout plan inserted successfully:', insertData);
+        return true;
       }
 
-      console.log('Workout plan saved successfully:', data);
+      console.log('Workout plan updated successfully:', updateData);
       return true;
     } catch (error) {
       console.error('Failed to save workout plan:', error);
@@ -231,12 +267,6 @@ export const useAIPlanGeneration = () => {
             title: "Meal Plan Generated!",
             description: "Your personalized meal plan has been saved",
           });
-        } else {
-          toast({
-            title: "Generation Successful, Save Failed",
-            description: "Plan generated but not saved. It will be lost on page refresh.",
-            variant: "destructive",
-          });
         }
       } else {
         setWorkoutPlan(data.plan);
@@ -245,12 +275,6 @@ export const useAIPlanGeneration = () => {
           toast({
             title: "Workout Plan Generated!",
             description: "Your personalized workout plan has been saved",
-          });
-        } else {
-          toast({
-            title: "Generation Successful, Save Failed",
-            description: "Plan generated but not saved. It will be lost on page refresh.",
-            variant: "destructive",
           });
         }
       }
