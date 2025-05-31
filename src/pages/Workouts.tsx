@@ -7,11 +7,24 @@ import { useAIPlanGeneration } from "@/hooks/useAIPlanGeneration";
 import { WorkoutPlanDisplay } from "@/components/WorkoutPlanDisplay";
 
 const Workouts = () => {
-  const { generatePlan, isGenerating, workoutPlan } = useAIPlanGeneration();
+  const { generatePlan, isGenerating, isLoading, workoutPlan } = useAIPlanGeneration();
   
   const handleGenerateNewPlan = async () => {
     await generatePlan('workout');
   };
+
+  // Show loading state while fetching existing plans
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // Show generate prompt if no workout plan exists
   if (!workoutPlan) {

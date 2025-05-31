@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,12 +38,25 @@ interface MealPlan {
 }
 
 const MealPlan = () => {
-  const { generatePlan, isGenerating, mealPlan } = useAIPlanGeneration();
+  const { generatePlan, isGenerating, isLoading, mealPlan } = useAIPlanGeneration();
   const [selectedDay, setSelectedDay] = useState("Monday");
   
   const handleGenerateNewPlan = async () => {
     await generatePlan('meal');
   };
+
+  // Show loading state while fetching existing plans
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // Show generate prompt if no meal plan exists
   if (!mealPlan) {

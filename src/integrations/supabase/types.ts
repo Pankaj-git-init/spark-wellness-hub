@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      meal_plans: {
+        Row: {
+          created_at: string
+          daily_calories: number | null
+          id: string
+          overview: string | null
+          plan_data: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_calories?: number | null
+          id?: string
+          overview?: string | null
+          plan_data: Json
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_calories?: number | null
+          id?: string
+          overview?: string | null
+          plan_data?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -42,6 +75,39 @@ export type Database = {
           id?: string
           updated_at?: string
           weight?: number | null
+        }
+        Relationships: []
+      }
+      workout_plans: {
+        Row: {
+          created_at: string
+          id: string
+          overview: string | null
+          plan_data: Json
+          title: string
+          updated_at: string
+          user_id: string
+          weekly_goal: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          overview?: string | null
+          plan_data: Json
+          title: string
+          updated_at?: string
+          user_id: string
+          weekly_goal?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          overview?: string | null
+          plan_data?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+          weekly_goal?: string | null
         }
         Relationships: []
       }
