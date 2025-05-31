@@ -52,6 +52,7 @@ export const useAIPlanGeneration = () => {
   useEffect(() => {
     const loadExistingPlans = async () => {
       if (!user) {
+        console.log('No user found, skipping plan loading');
         setIsLoading(false);
         return;
       }
@@ -73,6 +74,8 @@ export const useAIPlanGeneration = () => {
         } else if (mealPlanData) {
           console.log('Loaded meal plan:', mealPlanData);
           setMealPlan(mealPlanData.plan_data as unknown as MealPlan);
+        } else {
+          console.log('No meal plan found for user');
         }
 
         // Load workout plan
@@ -89,6 +92,8 @@ export const useAIPlanGeneration = () => {
         } else if (workoutPlanData) {
           console.log('Loaded workout plan:', workoutPlanData);
           setWorkoutPlan(workoutPlanData.plan_data as unknown as WorkoutPlan);
+        } else {
+          console.log('No workout plan found for user');
         }
 
       } catch (error) {
@@ -102,12 +107,16 @@ export const useAIPlanGeneration = () => {
   }, [user]);
 
   const saveMealPlan = async (plan: MealPlan) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found, cannot save meal plan');
+      return false;
+    }
 
     try {
-      console.log('Saving meal plan to database');
+      console.log('Saving meal plan to database for user:', user.id);
+      console.log('Plan data:', plan);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('meal_plans')
         .upsert({
           user_id: user.id,
@@ -118,31 +127,38 @@ export const useAIPlanGeneration = () => {
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
-        });
+        })
+        .select();
 
       if (error) {
         console.error('Error saving meal plan:', error);
         throw error;
       }
 
-      console.log('Meal plan saved successfully');
+      console.log('Meal plan saved successfully:', data);
+      return true;
     } catch (error) {
       console.error('Failed to save meal plan:', error);
       toast({
         title: "Save Failed",
-        description: "Failed to save meal plan. It will be lost on page refresh.",
+        description: "Failed to save meal plan. Please try again.",
         variant: "destructive",
       });
+      return false;
     }
   };
 
   const saveWorkoutPlan = async (plan: WorkoutPlan) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found, cannot save workout plan');
+      return false;
+    }
 
     try {
-      console.log('Saving workout plan to database');
+      console.log('Saving workout plan to database for user:', user.id);
+      console.log('Plan data:', plan);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('workout_plans')
         .upsert({
           user_id: user.id,
@@ -153,21 +169,24 @@ export const useAIPlanGeneration = () => {
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
-        });
+        })
+        .select();
 
       if (error) {
         console.error('Error saving workout plan:', error);
         throw error;
       }
 
-      console.log('Workout plan saved successfully');
+      console.log('Workout plan saved successfully:', data);
+      return true;
     } catch (error) {
       console.error('Failed to save workout plan:', error);
       toast({
         title: "Save Failed",
-        description: "Failed to save workout plan. It will be lost on page refresh.",
+        description: "Failed to save workout plan. Please try again.",
         variant: "destructive",
       });
+      return false;
     }
   };
 
@@ -206,18 +225,34 @@ export const useAIPlanGeneration = () => {
 
       if (planType === 'meal') {
         setMealPlan(data.plan);
-        await saveMealPlan(data.plan);
-        toast({
-          title: "Meal Plan Generated!",
-          description: "Your personalized meal plan is ready",
-        });
+        const saveSuccess = await saveMealPlan(data.plan);
+        if (saveSuccess) {
+          toast({
+            title: "Meal Plan Generated!",
+            description: "Your personalized meal plan has been saved",
+          });
+        } else {
+          toast({
+            title: "Generation Successful, Save Failed",
+            description: "Plan generated but not saved. It will be lost on page refresh.",
+            variant: "destructive",
+          });
+        }
       } else {
         setWorkoutPlan(data.plan);
-        await saveWorkoutPlan(data.plan);
-        toast({
-          title: "Workout Plan Generated!",
-          description: "Your personalized workout plan is ready",
-        });
+        const saveSuccess = await saveWorkoutPlan(data.plan);
+        if (saveSuccess) {
+          toast({
+            title: "Workout Plan Generated!",
+            description: "Your personalized workout plan has been saved",
+          });
+        } else {
+          toast({
+            title: "Generation Successful, Save Failed",
+            description: "Plan generated but not saved. It will be lost on page refresh.",
+            variant: "destructive",
+          });
+        }
       }
 
     } catch (error) {
