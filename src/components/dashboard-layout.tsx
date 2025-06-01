@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
@@ -10,13 +9,15 @@ import {
   User, 
   Menu, 
   X, 
-  ChevronDown
+  ChevronDown,
+  Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -67,6 +68,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  // Import useSubscription hook
+  const { isPro, isLoading: subscriptionLoading } = useSubscription();
   
   return (
     <div className="min-h-screen w-full bg-background">
@@ -106,12 +110,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card border">
                 <div className="py-1 rounded-md bg-card shadow-xs" onClick={() => setUserMenuOpen(false)}>
                   <div className="px-4 py-2 text-sm border-b">
-                    <div className="font-medium">{displayName}</div>
+                    <div className={`font-medium ${isPro ? 'text-yellow-600' : ''} flex items-center gap-1`}>
+                      {displayName}
+                      {isPro && <Crown className="h-3 w-3 text-yellow-500" />}
+                    </div>
                     <div className="text-muted-foreground">{userEmail}</div>
                   </div>
                   <Link to="/profile-setup" className="block px-4 py-2 text-sm hover:bg-accent">
                     Edit Profile
                   </Link>
+                  {!isPro && (
+                    <Link to="/upgrade-pro" className="block px-4 py-2 text-sm text-yellow-600 hover:bg-accent">
+                      Upgrade to Pro
+                    </Link>
+                  )}
                   <button 
                     onClick={handleLogout} 
                     className="block w-full text-left px-4 py-2 text-sm text-destructive hover:bg-accent"
@@ -247,7 +259,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <AvatarImage src="" alt={displayName} />
                     <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                   </Avatar>
-                  <span className="hidden lg:inline">{displayName}</span>
+                  <span className={`hidden lg:inline ${isPro ? 'text-yellow-600 font-semibold' : ''} flex items-center gap-1`}>
+                    {displayName}
+                    {isPro && <Crown className="h-4 w-4 text-yellow-500" />}
+                  </span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
                 
@@ -255,12 +270,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card border">
                     <div className="py-1 rounded-md bg-card shadow-xs" onClick={() => setUserMenuOpen(false)}>
                       <div className="px-4 py-2 text-sm border-b">
-                        <div className="font-medium">{displayName}</div>
+                        <div className={`font-medium ${isPro ? 'text-yellow-600' : ''} flex items-center gap-1`}>
+                          {displayName}
+                          {isPro && <Crown className="h-3 w-3 text-yellow-500" />}
+                        </div>
                         <div className="text-muted-foreground">{userEmail}</div>
                       </div>
                       <Link to="/profile-setup" className="block px-4 py-2 text-sm hover:bg-accent">
                         Edit Profile
                       </Link>
+                      {!isPro && (
+                        <Link to="/upgrade-pro" className="block px-4 py-2 text-sm text-yellow-600 hover:bg-accent">
+                          Upgrade to Pro
+                        </Link>
+                      )}
                       <button 
                         onClick={handleLogout} 
                         className="block w-full text-left px-4 py-2 text-sm text-destructive hover:bg-accent"

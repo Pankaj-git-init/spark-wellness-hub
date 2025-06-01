@@ -17,6 +17,7 @@ import MealPlan from "./pages/MealPlan";
 import Workouts from "./pages/Workouts";
 import Progress from "./pages/Progress";
 import Recipes from "./pages/Recipes";
+import UpgradePro from "./pages/UpgradePro";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const AppRoutes = () => (
     <Route path="/workouts" element={<ProtectedRoute><Workouts /></ProtectedRoute>} />
     <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
     <Route path="/recipes" element={<ProtectedRoute><Recipes /></ProtectedRoute>} />
+    <Route path="/upgrade-pro" element={<ProtectedRoute><UpgradePro /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

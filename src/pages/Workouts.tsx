@@ -3,13 +3,22 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dumbbell, Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useAIPlanGeneration } from "@/hooks/useAIPlanGeneration";
+import { useSubscription } from "@/hooks/useSubscription";
 import { WorkoutPlanDisplay } from "@/components/WorkoutPlanDisplay";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const Workouts = () => {
   const { generatePlan, isGenerating, isLoading, workoutPlan } = useAIPlanGeneration();
+  const { isPro } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   const handleGenerateNewPlan = async () => {
+    if (!isPro) {
+      setShowUpgradeModal(true);
+      return;
+    }
     await generatePlan('workout');
   };
 
@@ -78,6 +87,11 @@ const Workouts = () => {
             </CardContent>
           </Card>
         </div>
+        
+        <UpgradeModal 
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+        />
       </DashboardLayout>
     );
   }
@@ -90,7 +104,12 @@ const Workouts = () => {
             <h1 className="text-3xl font-bold tracking-tight">Workout Plan</h1>
             <p className="text-muted-foreground">Your personalized AI workout plan based on your goals</p>
           </div>
-          <Button onClick={handleGenerateNewPlan} disabled={isGenerating}>
+          <Button 
+            onClick={handleGenerateNewPlan} 
+            disabled={isGenerating}
+            variant={isPro ? "default" : "outline"}
+            className={!isPro ? "opacity-75" : ""}
+          >
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -104,6 +123,11 @@ const Workouts = () => {
 
         <WorkoutPlanDisplay plan={workoutPlan} />
       </div>
+
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </DashboardLayout>
   );
 };
