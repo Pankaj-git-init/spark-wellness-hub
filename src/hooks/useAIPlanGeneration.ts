@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface MealPlan {
@@ -116,44 +116,54 @@ export const useAIPlanGeneration = () => {
       console.log('Saving meal plan to database for user:', user.id);
       console.log('Plan data:', plan);
 
-      // First, try to update existing plan
-      const { data: updateData, error: updateError } = await supabase
+      // Check if a plan already exists
+      const { data: existingPlan, error: checkError } = await supabase
         .from('meal_plans')
-        .update({
-          title: plan.title,
-          overview: plan.overview,
-          daily_calories: plan.dailyCalories,
-          plan_data: plan as any,
-          updated_at: new Date().toISOString()
-        })
+        .select('id')
         .eq('user_id', user.id)
-        .select();
+        .maybeSingle();
 
-      if (updateError) {
-        console.log('Update failed, trying insert:', updateError);
-        
-        // If update fails, try insert
-        const { data: insertData, error: insertError } = await supabase
+      if (checkError) {
+        console.error('Error checking existing plan:', checkError);
+        throw checkError;
+      }
+
+      let result;
+      if (existingPlan) {
+        // Update existing plan
+        console.log('Updating existing meal plan');
+        result = await supabase
+          .from('meal_plans')
+          .update({
+            title: plan.title,
+            overview: plan.overview,
+            daily_calories: plan.dailyCalories,
+            plan_data: plan,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select();
+      } else {
+        // Insert new plan
+        console.log('Inserting new meal plan');
+        result = await supabase
           .from('meal_plans')
           .insert({
             user_id: user.id,
             title: plan.title,
             overview: plan.overview,
             daily_calories: plan.dailyCalories,
-            plan_data: plan as any
+            plan_data: plan
           })
           .select();
-
-        if (insertError) {
-          console.error('Insert also failed:', insertError);
-          throw insertError;
-        }
-
-        console.log('Meal plan inserted successfully:', insertData);
-        return true;
       }
 
-      console.log('Meal plan updated successfully:', updateData);
+      if (result.error) {
+        console.error('Error saving meal plan:', result.error);
+        throw result.error;
+      }
+
+      console.log('Meal plan saved successfully:', result.data);
       return true;
     } catch (error) {
       console.error('Failed to save meal plan:', error);
@@ -176,44 +186,54 @@ export const useAIPlanGeneration = () => {
       console.log('Saving workout plan to database for user:', user.id);
       console.log('Plan data:', plan);
 
-      // First, try to update existing plan
-      const { data: updateData, error: updateError } = await supabase
+      // Check if a plan already exists
+      const { data: existingPlan, error: checkError } = await supabase
         .from('workout_plans')
-        .update({
-          title: plan.title,
-          overview: plan.overview,
-          weekly_goal: plan.weeklyGoal,
-          plan_data: plan as any,
-          updated_at: new Date().toISOString()
-        })
+        .select('id')
         .eq('user_id', user.id)
-        .select();
+        .maybeSingle();
 
-      if (updateError) {
-        console.log('Update failed, trying insert:', updateError);
-        
-        // If update fails, try insert
-        const { data: insertData, error: insertError } = await supabase
+      if (checkError) {
+        console.error('Error checking existing plan:', checkError);
+        throw checkError;
+      }
+
+      let result;
+      if (existingPlan) {
+        // Update existing plan
+        console.log('Updating existing workout plan');
+        result = await supabase
+          .from('workout_plans')
+          .update({
+            title: plan.title,
+            overview: plan.overview,
+            weekly_goal: plan.weeklyGoal,
+            plan_data: plan,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select();
+      } else {
+        // Insert new plan
+        console.log('Inserting new workout plan');
+        result = await supabase
           .from('workout_plans')
           .insert({
             user_id: user.id,
             title: plan.title,
             overview: plan.overview,
             weekly_goal: plan.weeklyGoal,
-            plan_data: plan as any
+            plan_data: plan
           })
           .select();
-
-        if (insertError) {
-          console.error('Insert also failed:', insertError);
-          throw insertError;
-        }
-
-        console.log('Workout plan inserted successfully:', insertData);
-        return true;
       }
 
-      console.log('Workout plan updated successfully:', updateData);
+      if (result.error) {
+        console.error('Error saving workout plan:', result.error);
+        throw result.error;
+      }
+
+      console.log('Workout plan saved successfully:', result.data);
       return true;
     } catch (error) {
       console.error('Failed to save workout plan:', error);
