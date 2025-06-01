@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
@@ -30,6 +31,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  const { isPro, isLoading: subscriptionLoading } = useSubscription();
   
   const menuItems = [
     { title: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
@@ -69,8 +71,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       .slice(0, 2);
   };
 
-  // Import useSubscription hook
-  const { isPro, isLoading: subscriptionLoading } = useSubscription();
+  const handleUpgradeClick = () => {
+    navigate('/upgrade-pro');
+    setSidebarOpen(false);
+  };
   
   return (
     <div className="min-h-screen w-full bg-background">
@@ -184,13 +188,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="mt-auto pt-8">
             <div className="rounded-md bg-sidebar-accent p-4">
               <div className="flex items-center">
-                <User className="h-10 w-10 rounded-full bg-primary/20 p-2 text-primary" />
+                {isPro ? (
+                  <Crown className="h-10 w-10 rounded-full bg-yellow-500/20 p-2 text-yellow-500" />
+                ) : (
+                  <User className="h-10 w-10 rounded-full bg-primary/20 p-2 text-primary" />
+                )}
                 <div className="ml-4">
-                  <p className="text-sm font-medium">Upgrade to Pro</p>
-                  <p className="text-xs text-muted-foreground">Access all features</p>
+                  <p className="text-sm font-medium">
+                    {isPro ? "You are a Pro member" : "Upgrade to Pro"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isPro ? "Enjoy all premium features" : "Access all features"}
+                  </p>
                 </div>
               </div>
-              <Button className="mt-4 w-full">Upgrade</Button>
+              <Button 
+                className={`mt-4 w-full ${isPro ? 'bg-yellow-500 hover:bg-yellow-600 text-black' : ''}`}
+                onClick={handleUpgradeClick}
+              >
+                {isPro ? "View Plan" : "Upgrade"}
+              </Button>
             </div>
           </div>
         </div>
@@ -229,13 +246,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             
             <div className="mt-8 rounded-md bg-sidebar-accent p-4">
               <div className="flex items-center">
-                <User className="h-10 w-10 rounded-full bg-primary/20 p-2 text-primary" />
+                {isPro ? (
+                  <Crown className="h-10 w-10 rounded-full bg-yellow-500/20 p-2 text-yellow-500" />
+                ) : (
+                  <User className="h-10 w-10 rounded-full bg-primary/20 p-2 text-primary" />
+                )}
                 <div className="ml-4">
-                  <p className="text-sm font-medium">Upgrade to Pro</p>
-                  <p className="text-xs text-muted-foreground">Access all features</p>
+                  <p className="text-sm font-medium">
+                    {isPro ? "You are a Pro member" : "Upgrade to Pro"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isPro ? "Enjoy all premium features" : "Access all features"}
+                  </p>
                 </div>
               </div>
-              <Button className="mt-4 w-full">Upgrade</Button>
+              <Button 
+                className={`mt-4 w-full ${isPro ? 'bg-yellow-500 hover:bg-yellow-600 text-black' : ''}`}
+                onClick={handleUpgradeClick}
+              >
+                {isPro ? "View Plan" : "Upgrade"}
+              </Button>
             </div>
           </div>
         </aside>
