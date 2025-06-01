@@ -138,7 +138,7 @@ export const useAIPlanGeneration = () => {
             title: plan.title,
             overview: plan.overview,
             daily_calories: plan.dailyCalories,
-            plan_data: plan,
+            plan_data: plan as any,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
@@ -153,7 +153,7 @@ export const useAIPlanGeneration = () => {
             title: plan.title,
             overview: plan.overview,
             daily_calories: plan.dailyCalories,
-            plan_data: plan
+            plan_data: plan as any
           })
           .select();
       }
@@ -208,7 +208,7 @@ export const useAIPlanGeneration = () => {
             title: plan.title,
             overview: plan.overview,
             weekly_goal: plan.weeklyGoal,
-            plan_data: plan,
+            plan_data: plan as any,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
@@ -223,7 +223,7 @@ export const useAIPlanGeneration = () => {
             title: plan.title,
             overview: plan.overview,
             weekly_goal: plan.weeklyGoal,
-            plan_data: plan
+            plan_data: plan as any
           })
           .select();
       }
