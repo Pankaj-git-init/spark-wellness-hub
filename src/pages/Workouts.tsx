@@ -8,18 +8,29 @@ import { useAIPlanGeneration } from "@/hooks/useAIPlanGeneration";
 import { useSubscription } from "@/hooks/useSubscription";
 import { WorkoutPlanDisplay } from "@/components/WorkoutPlanDisplay";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { PurchaseRegenerationsModal } from "@/components/PurchaseRegenerationsModal";
 
 const Workouts = () => {
   const { generatePlan, isGenerating, isLoading, workoutPlan } = useAIPlanGeneration();
-  const { isPro } = useSubscription();
+  const { isPro, canRegenerate, useRegeneration, regenerationsRemaining } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   
   const handleGenerateNewPlan = async () => {
     if (!isPro) {
       setShowUpgradeModal(true);
       return;
     }
-    await generatePlan('workout');
+
+    if (!canRegenerate) {
+      setShowPurchaseModal(true);
+      return;
+    }
+
+    const canUse = await useRegeneration();
+    if (canUse) {
+      await generatePlan('workout');
+    }
   };
 
   // Show loading state while fetching existing plans
@@ -92,6 +103,10 @@ const Workouts = () => {
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
         />
+        <PurchaseRegenerationsModal 
+          isOpen={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+        />
       </DashboardLayout>
     );
   }
@@ -103,12 +118,17 @@ const Workouts = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Workout Plan</h1>
             <p className="text-muted-foreground">Your personalized AI workout plan based on your goals</p>
+            {isPro && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Regenerations remaining: {regenerationsRemaining}
+              </p>
+            )}
           </div>
           <Button 
             onClick={handleGenerateNewPlan} 
             disabled={isGenerating}
-            variant={isPro ? "default" : "outline"}
-            className={!isPro ? "opacity-75" : ""}
+            variant={isPro && canRegenerate ? "default" : "outline"}
+            className={!isPro || !canRegenerate ? "opacity-75" : ""}
           >
             {isGenerating ? (
               <>
@@ -127,6 +147,10 @@ const Workouts = () => {
       <UpgradeModal 
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+      />
+      <PurchaseRegenerationsModal 
+        isOpen={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
       />
     </DashboardLayout>
   );

@@ -78,10 +78,40 @@ export type Database = {
         }
         Relationships: []
       }
+      regeneration_purchases: {
+        Row: {
+          amount_paid: number
+          id: string
+          purchase_date: string
+          regenerations_added: number
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          id?: string
+          purchase_date?: string
+          regenerations_added?: number
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          id?: string
+          purchase_date?: string
+          regenerations_added?: number
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
           id: string
+          last_reset_date: string | null
+          regenerations_limit: number
+          regenerations_used: number
           subscription_type: Database["public"]["Enums"]["subscription_type"]
           updated_at: string
           user_id: string
@@ -89,6 +119,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_reset_date?: string | null
+          regenerations_limit?: number
+          regenerations_used?: number
           subscription_type?: Database["public"]["Enums"]["subscription_type"]
           updated_at?: string
           user_id: string
@@ -96,6 +129,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_reset_date?: string | null
+          regenerations_limit?: number
+          regenerations_used?: number
           subscription_type?: Database["public"]["Enums"]["subscription_type"]
           updated_at?: string
           user_id?: string

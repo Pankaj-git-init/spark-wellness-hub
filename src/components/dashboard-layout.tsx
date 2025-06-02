@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
@@ -11,7 +10,8 @@ import {
   Menu, 
   X, 
   ChevronDown,
-  Crown
+  Crown,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +19,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { PurchaseRegenerationsModal } from "@/components/PurchaseRegenerationsModal";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -27,11 +28,12 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
-  const { isPro, isLoading: subscriptionLoading } = useSubscription();
+  const { isPro, regenerationsRemaining, subscription } = useSubscription();
   
   const menuItems = [
     { title: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
@@ -75,6 +77,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     navigate('/upgrade-pro');
     setSidebarOpen(false);
   };
+
+  const handlePurchaseMore = () => {
+    setShowPurchaseModal(true);
+    setUserMenuOpen(false);
+  };
   
   return (
     <div className="min-h-screen w-full bg-background">
@@ -111,7 +118,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </Button>
             
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card border">
+              <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-card border">
                 <div className="py-1 rounded-md bg-card shadow-xs" onClick={() => setUserMenuOpen(false)}>
                   <div className="px-4 py-2 text-sm border-b">
                     <div className={`font-medium ${isPro ? 'text-yellow-600' : ''} flex items-center gap-1`}>
@@ -119,6 +126,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       {isPro && <Crown className="h-3 w-3 text-yellow-500" />}
                     </div>
                     <div className="text-muted-foreground">{userEmail}</div>
+                    {isPro && subscription && (
+                      <div className="mt-2 flex items-center gap-2 text-xs">
+                        <Zap className="h-3 w-3 text-yellow-500" />
+                        <span>Regenerations: {regenerationsRemaining}/{subscription.regenerations_limit}</span>
+                      </div>
+                    )}
                   </div>
                   <Link to="/profile-setup" className="block px-4 py-2 text-sm hover:bg-accent">
                     Edit Profile
@@ -127,6 +140,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <Link to="/upgrade-pro" className="block px-4 py-2 text-sm text-yellow-600 hover:bg-accent">
                       Upgrade to Pro
                     </Link>
+                  )}
+                  {isPro && regenerationsRemaining === 0 && (
+                    <button 
+                      onClick={handlePurchaseMore}
+                      className="block w-full text-left px-4 py-2 text-sm text-yellow-600 hover:bg-accent"
+                    >
+                      Buy More Regenerations
+                    </button>
                   )}
                   <button 
                     onClick={handleLogout} 
@@ -297,7 +318,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Button>
                 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card border">
+                  <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-card border">
                     <div className="py-1 rounded-md bg-card shadow-xs" onClick={() => setUserMenuOpen(false)}>
                       <div className="px-4 py-2 text-sm border-b">
                         <div className={`font-medium ${isPro ? 'text-yellow-600' : ''} flex items-center gap-1`}>
@@ -305,6 +326,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           {isPro && <Crown className="h-3 w-3 text-yellow-500" />}
                         </div>
                         <div className="text-muted-foreground">{userEmail}</div>
+                        {isPro && subscription && (
+                          <div className="mt-2 flex items-center gap-2 text-xs">
+                            <Zap className="h-3 w-3 text-yellow-500" />
+                            <span>Regenerations: {regenerationsRemaining}/{subscription.regenerations_limit}</span>
+                          </div>
+                        )}
                       </div>
                       <Link to="/profile-setup" className="block px-4 py-2 text-sm hover:bg-accent">
                         Edit Profile
@@ -313,6 +340,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         <Link to="/upgrade-pro" className="block px-4 py-2 text-sm text-yellow-600 hover:bg-accent">
                           Upgrade to Pro
                         </Link>
+                      )}
+                      {isPro && regenerationsRemaining === 0 && (
+                        <button 
+                          onClick={handlePurchaseMore}
+                          className="block w-full text-left px-4 py-2 text-sm text-yellow-600 hover:bg-accent"
+                        >
+                          Buy More Regenerations
+                        </button>
                       )}
                       <button 
                         onClick={handleLogout} 
@@ -333,6 +368,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </main>
         </div>
       </div>
+
+      <PurchaseRegenerationsModal 
+        isOpen={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+      />
     </div>
   );
 }

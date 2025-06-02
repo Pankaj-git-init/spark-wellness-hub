@@ -10,6 +10,9 @@ export interface Subscription {
   id: string;
   user_id: string;
   subscription_type: SubscriptionType;
+  regenerations_used: number;
+  regenerations_limit: number;
+  last_reset_date: string;
   created_at: string;
   updated_at: string;
 }
@@ -115,14 +118,122 @@ export const useSubscription = () => {
     }
   };
 
+  const useRegeneration = async () => {
+    if (!user || !subscription || !isPro) {
+      return false;
+    }
+
+    if (subscription.regenerations_used >= subscription.regenerations_limit) {
+      toast({
+        title: "Regeneration Limit Reached",
+        description: `You have used all ${subscription.regenerations_limit} regenerations. Purchase more to continue.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      console.log('Using regeneration for user:', user.id);
+      
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update({
+          regenerations_used: subscription.regenerations_used + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error using regeneration:', error);
+        throw error;
+      }
+
+      console.log('Regeneration used successfully:', data);
+      setSubscription(data);
+      return true;
+    } catch (error) {
+      console.error('Failed to use regeneration:', error);
+      toast({
+        title: "Error",
+        description: "Failed to use regeneration. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const purchaseRegenerations = async () => {
+    if (!user || !subscription) {
+      return false;
+    }
+
+    try {
+      console.log('Purchasing regenerations for user:', user.id);
+      
+      // Add 3 more regenerations to the limit
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update({
+          regenerations_limit: subscription.regenerations_limit + 3,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error purchasing regenerations:', error);
+        throw error;
+      }
+
+      // Record the purchase
+      const { error: purchaseError } = await supabase
+        .from('regeneration_purchases')
+        .insert({
+          user_id: user.id,
+          regenerations_added: 3,
+          amount_paid: 9.99
+        });
+
+      if (purchaseError) {
+        console.error('Error recording purchase:', purchaseError);
+        // Don't throw here as the main update succeeded
+      }
+
+      console.log('Regenerations purchased successfully:', data);
+      setSubscription(data);
+      toast({
+        title: "Purchase Successful!",
+        description: "You have successfully purchased 3 more regenerations.",
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to purchase regenerations:', error);
+      toast({
+        title: "Purchase Failed",
+        description: "Failed to purchase regenerations. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const isPro = subscription?.subscription_type === 'pro';
   const isBasic = subscription?.subscription_type === 'basic';
+  const canRegenerate = isPro && subscription && subscription.regenerations_used < subscription.regenerations_limit;
+  const regenerationsRemaining = subscription ? subscription.regenerations_limit - subscription.regenerations_used : 0;
 
   return {
     subscription,
     isLoading,
     isPro,
     isBasic,
+    canRegenerate,
+    regenerationsRemaining,
     upgradeToPro,
+    useRegeneration,
+    purchaseRegenerations,
   };
 };

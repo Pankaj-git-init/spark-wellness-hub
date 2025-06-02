@@ -11,6 +11,7 @@ import {
 } from "@/hooks/useAIPlanGeneration";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { PurchaseRegenerationsModal } from "@/components/PurchaseRegenerationsModal";
 
 interface Meal {
   name: string;
@@ -40,16 +41,26 @@ interface MealPlan {
 
 const MealPlan = () => {
   const { generatePlan, isGenerating, isLoading, mealPlan } = useAIPlanGeneration();
-  const { isPro } = useSubscription();
+  const { isPro, canRegenerate, useRegeneration, regenerationsRemaining } = useSubscription();
   const [selectedDay, setSelectedDay] = useState("Monday");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   
   const handleGenerateNewPlan = async () => {
     if (!isPro) {
       setShowUpgradeModal(true);
       return;
     }
-    await generatePlan('meal');
+
+    if (!canRegenerate) {
+      setShowPurchaseModal(true);
+      return;
+    }
+
+    const canUse = await useRegeneration();
+    if (canUse) {
+      await generatePlan('meal');
+    }
   };
 
   // Show loading state while fetching existing plans
@@ -122,6 +133,10 @@ const MealPlan = () => {
           isOpen={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
         />
+        <PurchaseRegenerationsModal 
+          isOpen={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+        />
       </DashboardLayout>
     );
   }
@@ -144,12 +159,17 @@ const MealPlan = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Meal Plan</h1>
             <p className="text-muted-foreground">{mealPlan.title}</p>
+            {isPro && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Regenerations remaining: {regenerationsRemaining}
+              </p>
+            )}
           </div>
           <Button 
             onClick={handleGenerateNewPlan} 
             disabled={isGenerating}
-            variant={isPro ? "default" : "outline"}
-            className={!isPro ? "opacity-75" : ""}
+            variant={isPro && canRegenerate ? "default" : "outline"}
+            className={!isPro || !canRegenerate ? "opacity-75" : ""}
           >
             {isGenerating ? (
               <>
@@ -258,6 +278,10 @@ const MealPlan = () => {
       <UpgradeModal 
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+      />
+      <PurchaseRegenerationsModal 
+        isOpen={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
       />
     </DashboardLayout>
   );
