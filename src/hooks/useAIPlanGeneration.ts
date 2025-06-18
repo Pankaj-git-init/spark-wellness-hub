@@ -246,7 +246,7 @@ export const useAIPlanGeneration = () => {
     }
   };
 
-  const generatePlan = async (planType: 'meal' | 'workout') => {
+  const generatePlan = async (planType: 'meal' | 'workout', isFirstTime = false) => {
     if (!user) {
       toast({
         title: "Authentication Error",
@@ -259,7 +259,7 @@ export const useAIPlanGeneration = () => {
     setIsGenerating(true);
     
     try {
-      console.log('Generating plan:', planType);
+      console.log('Generating plan:', planType, 'First time:', isFirstTime);
       
       const { data, error } = await supabase.functions.invoke('generate-ai-plan', {
         body: {
@@ -285,7 +285,7 @@ export const useAIPlanGeneration = () => {
         if (saveSuccess) {
           toast({
             title: "Meal Plan Generated!",
-            description: "Your personalized meal plan has been saved",
+            description: isFirstTime ? "Your free meal plan has been generated!" : "Your personalized meal plan has been saved",
           });
         }
       } else {
@@ -294,7 +294,7 @@ export const useAIPlanGeneration = () => {
         if (saveSuccess) {
           toast({
             title: "Workout Plan Generated!",
-            description: "Your personalized workout plan has been saved",
+            description: isFirstTime ? "Your free workout plan has been generated!" : "Your personalized workout plan has been saved",
           });
         }
       }

@@ -108,6 +108,8 @@ export type Database = {
       subscriptions: {
         Row: {
           created_at: string
+          free_meal_plan_used: boolean
+          free_workout_plan_used: boolean
           id: string
           last_reset_date: string | null
           regenerations_limit: number
@@ -118,6 +120,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          free_meal_plan_used?: boolean
+          free_workout_plan_used?: boolean
           id?: string
           last_reset_date?: string | null
           regenerations_limit?: number
@@ -128,6 +132,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          free_meal_plan_used?: boolean
+          free_workout_plan_used?: boolean
           id?: string
           last_reset_date?: string | null
           regenerations_limit?: number

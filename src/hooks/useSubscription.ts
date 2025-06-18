@@ -13,6 +13,8 @@ export interface Subscription {
   regenerations_used: number;
   regenerations_limit: number;
   last_reset_date: string;
+  free_meal_plan_used: boolean;
+  free_workout_plan_used: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -114,6 +116,40 @@ export const useSubscription = () => {
         description: "Failed to upgrade subscription. Please try again.",
         variant: "destructive",
       });
+      return false;
+    }
+  };
+
+  const markFreePlanUsed = async (planType: 'meal' | 'workout') => {
+    if (!user || !subscription) {
+      return false;
+    }
+
+    try {
+      console.log(`Marking free ${planType} plan as used for user:`, user.id);
+      
+      const updateField = planType === 'meal' ? 'free_meal_plan_used' : 'free_workout_plan_used';
+      
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update({
+          [updateField]: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error(`Error marking free ${planType} plan as used:`, error);
+        throw error;
+      }
+
+      console.log(`Free ${planType} plan marked as used successfully:`, data);
+      setSubscription(data);
+      return true;
+    } catch (error) {
+      console.error(`Failed to mark free ${planType} plan as used:`, error);
       return false;
     }
   };
@@ -224,6 +260,12 @@ export const useSubscription = () => {
   const isBasic = subscription?.subscription_type === 'basic';
   const canRegenerate = isPro && subscription && subscription.regenerations_used < subscription.regenerations_limit;
   const regenerationsRemaining = subscription ? subscription.regenerations_limit - subscription.regenerations_used : 0;
+  const canUseFreeGeneration = (planType: 'meal' | 'workout') => {
+    if (!subscription) return false;
+    if (planType === 'meal') return !subscription.free_meal_plan_used;
+    if (planType === 'workout') return !subscription.free_workout_plan_used;
+    return false;
+  };
 
   return {
     subscription,
@@ -232,8 +274,10 @@ export const useSubscription = () => {
     isBasic,
     canRegenerate,
     regenerationsRemaining,
+    canUseFreeGeneration,
     upgradeToPro,
     useRegeneration,
     purchaseRegenerations,
+    markFreePlanUsed,
   };
 };

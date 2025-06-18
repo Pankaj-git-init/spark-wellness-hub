@@ -12,11 +12,20 @@ import { PurchaseRegenerationsModal } from "@/components/PurchaseRegenerationsMo
 
 const Workouts = () => {
   const { generatePlan, isGenerating, isLoading, workoutPlan } = useAIPlanGeneration();
-  const { isPro, canRegenerate, useRegeneration, regenerationsRemaining } = useSubscription();
+  const { isPro, canRegenerate, useRegeneration, regenerationsRemaining, canUseFreeGeneration, markFreePlanUsed } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   
   const handleGenerateNewPlan = async () => {
+    // Check if user can use free generation (first time)
+    if (canUseFreeGeneration('workout')) {
+      console.log('Using free workout plan generation');
+      await generatePlan('workout', true);
+      await markFreePlanUsed('workout');
+      return;
+    }
+
+    // For subsequent generations, require pro subscription
     if (!isPro) {
       setShowUpgradeModal(true);
       return;
@@ -48,6 +57,8 @@ const Workouts = () => {
 
   // Show generate prompt if no workout plan exists
   if (!workoutPlan) {
+    const canGenerateForFree = canUseFreeGeneration('workout');
+    
     return (
       <DashboardLayout>
         <div className="space-y-6">
@@ -65,7 +76,7 @@ const Workouts = () => {
               ) : (
                 <>
                   <Dumbbell className="h-4 w-4 mr-2" />
-                  Generate New Plan
+                  {canGenerateForFree ? "Generate Free Plan" : "Generate New Plan"}
                 </>
               )}
             </Button>
@@ -78,7 +89,10 @@ const Workouts = () => {
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">No Workout Plan Generated Yet</h2>
                   <p className="text-muted-foreground mb-6">
-                    Generate your personalized workout plan to view your daily workout recommendation.
+                    {canGenerateForFree 
+                      ? "Generate your first workout plan for free to get started with your fitness journey."
+                      : "Generate your personalized workout plan to view your daily workout recommendation."
+                    }
                   </p>
                   <Button onClick={handleGenerateNewPlan} disabled={isGenerating} size="lg">
                     {isGenerating ? (
@@ -89,10 +103,15 @@ const Workouts = () => {
                     ) : (
                       <>
                         <Dumbbell className="h-4 w-4 mr-2" />
-                        Generate Workout Plan
+                        {canGenerateForFree ? "Generate Free Workout Plan" : "Generate Workout Plan"}
                       </>
                     )}
                   </Button>
+                  {canGenerateForFree && (
+                    <p className="text-sm text-green-600 mt-2">
+                      ✨ Your first workout plan is completely free!
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
