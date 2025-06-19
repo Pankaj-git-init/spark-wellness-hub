@@ -12,11 +12,16 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAIPlanGeneration } from "@/hooks/useAIPlanGeneration";
 import { MealPlanDisplay } from "@/components/MealPlanDisplay";
 import { WorkoutPlanDisplay } from "@/components/WorkoutPlanDisplay";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { WaterLogModal } from "@/components/WaterLogModal";
+import { useState } from "react";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { stats, isLoading: statsLoading, logWater } = useDashboardStats();
+  const [showWaterModal, setShowWaterModal] = useState(false);
   const { 
     generatePlan, 
     isGenerating, 
@@ -360,12 +365,23 @@ const Dashboard = () => {
                   <CardTitle className="text-sm font-medium">Daily Calories</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">--</div>
-                  <p className="text-xs text-muted-foreground">No data yet</p>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary/20">
-                    <div className="h-full bg-secondary" style={{ width: "0%" }} />
+                  <div className="text-2xl font-bold">
+                    {statsLoading ? "--" : stats.dailyCalories}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">Start tracking your meals</p>
+                  <p className="text-xs text-muted-foreground">
+                    {statsLoading ? "Loading..." : `Target: ${stats.targetCalories} cal`}
+                  </p>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary/20">
+                    <div 
+                      className="h-full bg-secondary transition-all duration-300" 
+                      style={{ 
+                        width: `${statsLoading ? 0 : Math.min((stats.dailyCalories / stats.targetCalories) * 100, 100)}%` 
+                      }} 
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {statsLoading ? "Start tracking your meals" : "From your meal plan"}
+                  </p>
                 </CardContent>
               </Card>
               
@@ -377,21 +393,27 @@ const Dashboard = () => {
                   <div className="flex justify-between text-sm">
                     <div>
                       <div className="font-medium">Protein</div>
-                      <div className="text-muted-foreground">--g</div>
+                      <div className="text-muted-foreground">
+                        {statsLoading ? "--g" : `${stats.macros.protein}g`}
+                      </div>
                     </div>
                     <div>
                       <div className="font-medium">Carbs</div>
-                      <div className="text-muted-foreground">--g</div>
+                      <div className="text-muted-foreground">
+                        {statsLoading ? "--g" : `${stats.macros.carbs}g`}
+                      </div>
                     </div>
                     <div>
                       <div className="font-medium">Fat</div>
-                      <div className="text-muted-foreground">--g</div>
+                      <div className="text-muted-foreground">
+                        {statsLoading ? "--g" : `${stats.macros.fat}g`}
+                      </div>
                     </div>
                   </div>
                   <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-primary" style={{ width: "0%" }} />
-                    <div className="h-full bg-secondary" style={{ width: "0%" }} />
-                    <div className="h-full bg-destructive/60" style={{ width: "0%" }} />
+                    <div className="h-full bg-primary transition-all duration-300" style={{ width: "30%" }} />
+                    <div className="h-full bg-secondary transition-all duration-300" style={{ width: "40%" }} />
+                    <div className="h-full bg-destructive/60 transition-all duration-300" style={{ width: "30%" }} />
                   </div>
                 </CardContent>
               </Card>
@@ -402,15 +424,21 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-between">
                   <div className="flex items-center">
-                    <Flame className="h-6 w-6 text-muted-foreground mr-2" />
-                    <span className="text-2xl font-bold">0 days</span>
+                    <Flame className={`h-6 w-6 mr-2 ${stats.workoutStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
+                    <span className="text-2xl font-bold">
+                      {statsLoading ? "--" : stats.workoutStreak} day{stats.workoutStreak !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Start your journey!</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {statsLoading ? "Loading..." : stats.workoutStreak > 0 ? "Keep it up!" : "Start your journey!"}
+                  </p>
                   <div className="mt-3 flex w-full justify-between">
                     {[1, 2, 3, 4, 5, 6, 7].map((day) => (
                       <div
                         key={day}
-                        className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs"
+                        className={`h-8 w-8 rounded-full flex items-center justify-center text-xs transition-colors ${
+                          day <= stats.workoutStreak ? 'bg-orange-500 text-white' : 'bg-muted'
+                        }`}
                       >
                         {day}
                       </div>
@@ -425,20 +453,30 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center">
                   <div className="flex items-baseline">
-                    <span className="text-2xl font-bold">0</span>
+                    <span className="text-2xl font-bold">
+                      {statsLoading ? "--" : stats.waterGlasses}
+                    </span>
                     <span className="text-sm text-muted-foreground ml-1">/ 8 glasses</span>
                   </div>
                   <div className="mt-4 flex items-end w-full h-12 gap-1">
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((glass) => (
                       <div
                         key={glass}
-                        className="flex-1 rounded-t-sm bg-muted"
+                        className={`flex-1 rounded-t-sm transition-colors ${
+                          glass <= stats.waterGlasses ? 'bg-blue-500' : 'bg-muted'
+                        }`}
                         style={{ height: "30%" }}
                       />
                     ))}
                   </div>
-                  <Button variant="outline" size="sm" className="mt-3 w-full">
-                    Log Water
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3 w-full"
+                    onClick={() => setShowWaterModal(true)}
+                    disabled={stats.waterGlasses >= 8}
+                  >
+                    {stats.waterGlasses >= 8 ? "Daily Goal Reached!" : "Log Water"}
                   </Button>
                 </CardContent>
               </Card>
@@ -446,6 +484,13 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      <WaterLogModal
+        isOpen={showWaterModal}
+        onClose={() => setShowWaterModal(false)}
+        onLogWater={logWater}
+        currentGlasses={stats.waterGlasses}
+      />
     </DashboardLayout>
   );
 };
