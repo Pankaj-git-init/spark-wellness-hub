@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,24 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
+import { useProgress } from "@/hooks/useProgress";
+import { WeightLogModal } from "@/components/WeightLogModal";
+import { WorkoutTracker } from "@/components/WorkoutTracker";
 
 const Progress = () => {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("weight");
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const { 
+    progressData, 
+    isLoading, 
+    logWeight, 
+    logWorkout, 
+    getTodaysProgress, 
+    getWeightData 
+  } = useProgress();
   
-  // Mock data for weight tracking
-  const weightData = [
-    { date: 'Week 1', weight: 78.0, target: 70.0 },
-    { date: 'Week 2', weight: 77.3, target: 70.0 },
-    { date: 'Week 3', weight: 76.5, target: 70.0 },
-    { date: 'Week 4', weight: 75.8, target: 70.0 },
-    { date: 'Week 5', weight: 75.0, target: 70.0 },
-    { date: 'Week 6', weight: 74.2, target: 70.0 },
-    { date: 'Week 7', weight: 73.7, target: 70.0 },
-    { date: 'Week 8', weight: 73.1, target: 70.0 },
-  ];
+  const todaysProgress = getTodaysProgress();
+  const weightData = getWeightData();
 
-  // Mock data for calories tracking
+  // Mock data for calories tracking (this could be made dynamic later)
   const caloriesData = [
     { date: 'Mon', consumed: 2100, burned: 2400, target: 2000 },
     { date: 'Tue', consumed: 2300, burned: 2500, target: 2000 },
@@ -34,17 +35,35 @@ const Progress = () => {
     { date: 'Sun', consumed: 1800, burned: 1900, target: 2000 },
   ];
   
-  // Mock data for workout tracking
-  const workoutData = [
-    { date: 'Week 1', completed: 3, target: 5 },
-    { date: 'Week 2', completed: 4, target: 5 },
-    { date: 'Week 3', completed: 5, target: 5 },
-    { date: 'Week 4', completed: 4, target: 5 },
-    { date: 'Week 5', completed: 5, target: 5 },
-    { date: 'Week 6', completed: 5, target: 5 },
-    { date: 'Week 7', completed: 6, target: 5 },
-    { date: 'Week 8', completed: 5, target: 5 },
-  ];
+  // Calculate workout data from real progress data
+  const workoutData = (() => {
+    const last8Weeks = [];
+    const today = new Date();
+    
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - (i * 7 + today.getDay()));
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      const weekProgress = progressData.filter(p => {
+        const progressDate = new Date(p.date);
+        return progressDate >= weekStart && progressDate <= weekEnd;
+      });
+      
+      const completed = weekProgress.reduce((total, day) => 
+        total + (day.workouts_completed?.length || 0), 0
+      );
+      
+      last8Weeks.push({
+        date: `Week ${8 - i}`,
+        completed: completed,
+        target: 5, // This could be made dynamic based on workout plan
+      });
+    }
+    
+    return last8Weeks;
+  })();
   
   // Mock data for body composition
   const bodyCompositionData = [
@@ -54,7 +73,7 @@ const Progress = () => {
     { name: 'Water', value: 23.4, color: '#3b82f6' },
   ];
   
-  // Mock data for measurements
+  // Mock data for measurements (this could be made dynamic later)
   const measurementsData = {
     chest: [
       { date: 'Initial', value: 102 },
@@ -98,7 +117,7 @@ const Progress = () => {
   const calculateWorkoutCompletion = () => {
     const completed = workoutData.reduce((acc, cur) => acc + cur.completed, 0);
     const target = workoutData.reduce((acc, cur) => acc + cur.target, 0);
-    const rate = Math.round((completed / target) * 100);
+    const rate = target > 0 ? Math.round((completed / target) * 100) : 0;
     
     return { completed, target, rate };
   };
@@ -107,31 +126,26 @@ const Progress = () => {
   
   // Calculate weight loss progress
   const calculateWeightProgress = () => {
+    if (weightData.length === 0) {
+      return { initial: 0, current: 0, target: 70, lost: 0, toGo: 0, percentage: 0 };
+    }
+    
     const initial = weightData[0].weight;
     const current = weightData[weightData.length - 1].weight;
-    const target = weightData[0].target;
+    const target = 70; // This could be made dynamic based on user profile
     
-    const totalToLose = initial - target;
-    const lost = initial - current;
-    const percentage = Math.round((lost / totalToLose) * 100);
+    const totalToLose = Math.max(initial - target, 0.1);
+    const lost = Math.max(initial - current, 0);
+    const percentage = Math.min(Math.round((lost / totalToLose) * 100), 100);
     
-    return { initial, current, target, lost, toGo: target - current, percentage };
+    return { initial, current, target, lost, toGo: Math.max(current - target, 0), percentage };
   };
   
   const weightProgress = calculateWeightProgress();
   
-  const handleLogWeight = () => {
-    toast({
-      title: "Weight logged successfully",
-      description: "Your progress chart has been updated",
-    });
-  };
-  
   const handleLogMeasurements = () => {
-    toast({
-      title: "Measurements logged successfully",
-      description: "Your body measurements have been updated",
-    });
+    // This would open a measurements modal - placeholder for now
+    console.log('Log measurements functionality to be implemented');
   };
   
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -150,6 +164,21 @@ const Progress = () => {
     return null;
   };
 
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading your progress...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -166,25 +195,38 @@ const Progress = () => {
               <CardTitle>Current Weight</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-3xl font-bold">{weightProgress.current} kg</div>
+              <div className="text-3xl font-bold">
+                {todaysProgress?.weight || weightProgress.current || '--'} kg
+              </div>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
-                <span className="text-green-500 font-medium">-{weightProgress.lost.toFixed(1)} kg</span>
-                <span className="mx-1">from starting weight</span>
+                {weightProgress.lost > 0 && (
+                  <>
+                    <span className="text-green-500 font-medium">-{weightProgress.lost.toFixed(1)} kg</span>
+                    <span className="mx-1">from starting weight</span>
+                  </>
+                )}
               </div>
-              <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div 
-                  className="h-full bg-primary" 
-                  style={{ width: `${weightProgress.percentage}%` }} 
-                />
-              </div>
-              <div className="flex justify-between text-sm mt-1">
-                <span>{weightProgress.initial} kg</span>
-                <span>{weightProgress.percentage}% complete</span>
-                <span>{weightProgress.target} kg</span>
-              </div>
+              {weightProgress.percentage > 0 && (
+                <>
+                  <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div 
+                      className="h-full bg-primary" 
+                      style={{ width: `${weightProgress.percentage}%` }} 
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span>{weightProgress.initial} kg</span>
+                    <span>{weightProgress.percentage}% complete</span>
+                    <span>{weightProgress.target} kg</span>
+                  </div>
+                </>
+              )}
             </CardContent>
             <CardFooter className="pt-0">
-              <Button className="w-full" onClick={handleLogWeight}>
+              <Button 
+                className="w-full" 
+                onClick={() => setShowWeightModal(true)}
+              >
                 Log Today's Weight
               </Button>
             </CardFooter>
@@ -261,6 +303,12 @@ const Progress = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Today's Workout Tracker */}
+        <WorkoutTracker 
+          onWorkoutToggle={logWorkout}
+          completedWorkouts={todaysProgress?.workouts_completed || []}
+        />
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
@@ -278,33 +326,47 @@ const Progress = () => {
                 <CardDescription>Monitor your weight changes over time</CardDescription>
               </CardHeader>
               <CardContent className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={weightData}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="weight" 
-                      name="weight" 
-                      stroke="#0ea5e9" 
-                      fill="#0ea5e9" 
-                      fillOpacity={0.2} 
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="target" 
-                      name="target" 
-                      stroke="#ef4444" 
-                      strokeDasharray="3 3" 
-                      fill="transparent" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {weightData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={weightData}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="weight" 
+                        name="weight" 
+                        stroke="#0ea5e9" 
+                        fill="#0ea5e9" 
+                        fillOpacity={0.2} 
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="target" 
+                        name="target" 
+                        stroke="#ef4444" 
+                        strokeDasharray="3 3" 
+                        fill="transparent" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <p className="text-muted-foreground">No weight data recorded yet</p>
+                      <Button 
+                        className="mt-4" 
+                        onClick={() => setShowWeightModal(true)}
+                      >
+                        Log Your First Weight
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -445,6 +507,13 @@ const Progress = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <WeightLogModal
+        isOpen={showWeightModal}
+        onClose={() => setShowWeightModal(false)}
+        onSubmit={logWeight}
+        currentWeight={todaysProgress?.weight}
+      />
     </DashboardLayout>
   );
 };

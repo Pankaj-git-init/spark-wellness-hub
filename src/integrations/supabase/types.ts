@@ -144,6 +144,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_progress: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          updated_at: string
+          user_id: string
+          weight: number | null
+          workouts_completed: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+          workouts_completed?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+          workouts_completed?: string[] | null
+        }
+        Relationships: []
+      }
       workout_plans: {
         Row: {
           created_at: string
