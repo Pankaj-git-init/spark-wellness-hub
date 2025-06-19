@@ -50,7 +50,12 @@ export const WorkoutTracker = ({ onWorkoutToggle, completedWorkouts }: WorkoutTr
         }
 
         if (data) {
-          setWorkoutPlan(data);
+          // Properly type the conversion from Json to WorkoutPlan
+          const typedWorkoutPlan: WorkoutPlan = {
+            title: data.title,
+            plan_data: data.plan_data as WorkoutPlan['plan_data']
+          };
+          setWorkoutPlan(typedWorkoutPlan);
         }
       } catch (error) {
         console.error('Error fetching workout plan:', error);
