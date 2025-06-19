@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,22 +42,33 @@ interface MealPlan {
 
 const MealPlan = () => {
   const { generatePlan, isGenerating, isLoading, mealPlan } = useAIPlanGeneration();
-  const { isPro, canRegenerate, useRegeneration, regenerationsRemaining } = useSubscription();
+  const { isPro, canRegenerate, useRegeneration, regenerationsRemaining, canUseFreeGeneration, markFreePlanUsed } = useSubscription();
   const [selectedDay, setSelectedDay] = useState("Monday");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   
   const handleGenerateNewPlan = async () => {
+    // Check if user can use free generation (first time)
+    if (canUseFreeGeneration('meal')) {
+      console.log('Using free meal plan generation');
+      await generatePlan('meal', true);
+      await markFreePlanUsed('meal');
+      return;
+    }
+
+    // If not free generation, check if user is pro
     if (!isPro) {
       setShowUpgradeModal(true);
       return;
     }
 
+    // If pro, check if they can regenerate
     if (!canRegenerate) {
       setShowPurchaseModal(true);
       return;
     }
 
+    // Use regeneration
     const canUse = await useRegeneration();
     if (canUse) {
       await generatePlan('meal');
@@ -78,6 +90,9 @@ const MealPlan = () => {
 
   // Show generate prompt if no meal plan exists
   if (!mealPlan) {
+    const canGenerate = canUseFreeGeneration('meal') || (isPro && canRegenerate);
+    const buttonText = canUseFreeGeneration('meal') ? 'Generate Free Plan' : 'Generate New Plan';
+    
     return (
       <DashboardLayout>
         <div className="space-y-6">
@@ -85,6 +100,9 @@ const MealPlan = () => {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Meal Plan</h1>
               <p className="text-muted-foreground">Your personalized AI meal plan based on your goals</p>
+              {canUseFreeGeneration('meal') && (
+                <p className="text-sm text-green-600 mt-1">🎉 Generate your first meal plan for free!</p>
+              )}
             </div>
             <Button onClick={handleGenerateNewPlan} disabled={isGenerating}>
               {isGenerating ? (
@@ -95,7 +113,7 @@ const MealPlan = () => {
               ) : (
                 <>
                   <Utensils className="h-4 w-4 mr-2" />
-                  Generate New Plan
+                  {buttonText}
                 </>
               )}
             </Button>
@@ -108,7 +126,10 @@ const MealPlan = () => {
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">No Meal Plan Generated Yet</h2>
                   <p className="text-muted-foreground mb-6">
-                    Generate your personalized meal plan to view your daily meal recommendation.
+                    {canUseFreeGeneration('meal') 
+                      ? "Generate your first personalized meal plan for free!"
+                      : "Generate your personalized meal plan to view your daily meal recommendation."
+                    }
                   </p>
                   <Button onClick={handleGenerateNewPlan} disabled={isGenerating} size="lg">
                     {isGenerating ? (
@@ -119,7 +140,7 @@ const MealPlan = () => {
                     ) : (
                       <>
                         <Utensils className="h-4 w-4 mr-2" />
-                        Generate Meal Plan
+                        {buttonText}
                       </>
                     )}
                   </Button>
