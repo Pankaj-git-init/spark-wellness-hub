@@ -34,10 +34,10 @@ export const useDashboardStats = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // Fetch today's progress
+      // Fetch today's progress with explicit column selection
       const { data: progressData } = await supabase
         .from('user_progress')
-        .select('*')
+        .select('water_glasses, workouts_completed')
         .eq('user_id', user.id)
         .eq('date', today)
         .single();
@@ -96,7 +96,7 @@ export const useDashboardStats = () => {
         dailyCalories: mealPlan?.daily_calories || 0,
         targetCalories: mealPlan?.daily_calories || 2000,
         workoutStreak,
-        waterGlasses: progressData?.water_glasses || 0,
+        waterGlasses: (progressData?.water_glasses as number) || 0,
         macros
       });
 
@@ -121,7 +121,7 @@ export const useDashboardStats = () => {
         .eq('date', today)
         .single();
 
-      const currentGlasses = existingData?.water_glasses || 0;
+      const currentGlasses = (existingData?.water_glasses as number) || 0;
       const newTotal = currentGlasses + glasses;
 
       const { error } = await supabase

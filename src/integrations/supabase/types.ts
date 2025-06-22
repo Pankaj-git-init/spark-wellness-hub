@@ -151,6 +151,7 @@ export type Database = {
           id: string
           updated_at: string
           user_id: string
+          water_glasses: number | null
           weight: number | null
           workouts_completed: string[] | null
         }
@@ -160,6 +161,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id: string
+          water_glasses?: number | null
           weight?: number | null
           workouts_completed?: string[] | null
         }
@@ -169,6 +171,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+          water_glasses?: number | null
           weight?: number | null
           workouts_completed?: string[] | null
         }
