@@ -110,7 +110,7 @@ const UpgradePro = () => {
                 </CardTitle>
               </div>
               <CardDescription className="text-3xl font-bold">
-                $9.99<span className="text-base font-normal text-muted-foreground">/month</span>
+                ₹799<span className="text-base font-normal text-muted-foreground">/month</span>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

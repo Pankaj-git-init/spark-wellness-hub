@@ -110,7 +110,7 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Pro Monthly Subscription</span>
-                    <span className="font-bold">$9.99</span>
+                    <span className="font-bold">₹799</span>
                   </div>
                 </CardContent>
               </Card>
@@ -174,7 +174,7 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
                 className="w-full"
                 disabled={!formData.name || !formData.email || !formData.cardNumber}
               >
-                Complete Payment - $9.99
+                Complete Payment - ₹799
               </Button>
             </div>
           </>

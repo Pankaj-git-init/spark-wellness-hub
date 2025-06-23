@@ -58,7 +58,7 @@ export const PurchaseRegenerationsModal = ({ isOpen, onClose }: PurchaseRegenera
                         Regenerate your meal and workout plans 3 more times
                       </p>
                     </div>
-                    <span className="font-bold text-lg">$9.99</span>
+                    <span className="font-bold text-lg">₹799</span>
                   </div>
                 </CardContent>
               </Card>
@@ -75,7 +75,7 @@ export const PurchaseRegenerationsModal = ({ isOpen, onClose }: PurchaseRegenera
               
               <Button onClick={handlePurchase} className="w-full">
                 <CreditCard className="h-4 w-4 mr-2" />
-                Purchase for $9.99
+                Purchase for ₹799
               </Button>
             </div>
           </>
