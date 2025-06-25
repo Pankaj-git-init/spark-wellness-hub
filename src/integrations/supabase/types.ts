@@ -149,6 +149,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          meals_completed: string[] | null
           updated_at: string
           user_id: string
           water_glasses: number | null
@@ -159,6 +160,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          meals_completed?: string[] | null
           updated_at?: string
           user_id: string
           water_glasses?: number | null
@@ -169,6 +171,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          meals_completed?: string[] | null
           updated_at?: string
           user_id?: string
           water_glasses?: number | null
