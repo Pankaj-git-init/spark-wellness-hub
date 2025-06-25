@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +9,7 @@ interface ProgressData {
   weight?: number;
   workouts_completed: string[];
   water_glasses?: number;
+  meals_completed?: string[];
 }
 
 export const useProgress = () => {
@@ -156,6 +156,79 @@ export const useProgress = () => {
     }
   };
 
+  const logMeal = async (mealId: string, completed: boolean, date?: string) => {
+    if (!user) return;
+
+    const targetDate = date || new Date().toISOString().split('T')[0];
+
+    try {
+      // First, try to get existing data for the date
+      const { data: existingData, error: fetchError } = await supabase
+        .from('user_progress')
+        .select('meals_completed')
+        .eq('user_id', user.id)
+        .eq('date', targetDate)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error fetching existing data:', fetchError);
+        throw fetchError;
+      }
+
+      const currentMeals = existingData?.meals_completed || [];
+      
+      let updatedMeals;
+      if (completed) {
+        // Add meal if not already present
+        updatedMeals = currentMeals.includes(mealId) 
+          ? currentMeals 
+          : [...currentMeals, mealId];
+      } else {
+        // Remove meal
+        updatedMeals = currentMeals.filter((m: string) => m !== mealId);
+      }
+
+      // Use upsert to insert or update the record
+      const { data, error } = await supabase
+        .from('user_progress')
+        .upsert({
+          user_id: user.id,
+          date: targetDate,
+          meals_completed: updatedMeals,
+        }, {
+          onConflict: 'user_id,date'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error upserting meal data:', error);
+        throw error;
+      }
+
+      // Update local state
+      setProgressData(prev => {
+        const filtered = prev.filter(p => p.date !== targetDate);
+        return [data, ...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      });
+
+      toast({
+        title: completed ? "Meal completed" : "Meal unchecked",
+        description: `${mealId.split('-')[0]} ${completed ? 'marked as completed' : 'unmarked'}`,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error logging meal:', error);
+      toast({
+        title: "Error updating meal",
+        description: "Unable to save your meal progress",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const logWater = async (glasses: number, date?: string) => {
     if (!user) return;
 
@@ -236,6 +309,7 @@ export const useProgress = () => {
     isLoading,
     logWeight,
     logWorkout,
+    logMeal,
     logWater,
     getTodaysProgress,
     getWeightData,

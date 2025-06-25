@@ -8,6 +8,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useProgress } from "@/hooks/useProgress";
 import { WeightLogModal } from "@/components/WeightLogModal";
 import { WorkoutTracker } from "@/components/WorkoutTracker";
+import { MealTracker } from "@/components/MealTracker";
 
 const Progress = () => {
   const [activeTab, setActiveTab] = useState("weight");
@@ -17,6 +18,7 @@ const Progress = () => {
     isLoading, 
     logWeight, 
     logWorkout, 
+    logMeal,
     getTodaysProgress, 
     getWeightData 
   } = useProgress();
@@ -303,6 +305,12 @@ const Progress = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Today's Meal Tracker */}
+        <MealTracker 
+          onMealToggle={logMeal}
+          completedMeals={todaysProgress?.meals_completed || []}
+        />
 
         {/* Today's Workout Tracker */}
         <WorkoutTracker 
